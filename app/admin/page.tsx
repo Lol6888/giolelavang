@@ -2,8 +2,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, Clock, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, Save, CalendarRange } from 'lucide-react'
-import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isSameDay, isBefore, startOfYear, endOfYear, eachMonthOfInterval } from 'date-fns'
+import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange } from 'lucide-react'
+import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isSameDay, isBefore, startOfYear, endOfYear, eachMonthOfInterval, addYears, subYears } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
 // --- TYPES ---
@@ -34,6 +34,8 @@ export default function AdminPage() {
   const calRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
   const locRef = useRef<HTMLDivElement>(null)
+  // Ref cho container chính để scroll
+  const mainContainerRef = useRef<HTMLDivElement>(null)
 
   // Click outside
   useEffect(() => {
@@ -110,14 +112,14 @@ export default function AdminPage() {
       setEditingId(null);
       setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' }));
       // Scroll lên đầu vùng cuộn của Admin Page
-      document.getElementById('admin-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+      mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   const startEdit = (item: Schedule) => {
       setForm({ start_time: item.start_time.slice(0,5), title: item.title, priest_name: item.priest_name, note: item.note, location: item.location })
       setSelectedDateForInput(item.date)
       setEditingId(item.id)
-      document.getElementById('admin-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+      mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   const handleDelete = async (id: number) => {
@@ -160,10 +162,10 @@ export default function AdminPage() {
   const MINUTES = ['00', '15', '30', '45'];
 
   return (
-    // QUAN TRỌNG: h-screen overflow-y-auto cho phép cuộn độc lập
-    <div id="admin-container" className="h-screen overflow-y-auto bg-slate-950 text-slate-200 font-sans pb-32">
+    // FIX QUAN TRỌNG: h-screen overflow-y-auto -> Tạo thanh cuộn riêng cho trang này
+    <div ref={mainContainerRef} className="h-screen w-full bg-slate-950 text-slate-200 font-sans overflow-y-auto overflow-x-hidden pb-32">
       
-      {/* HEADER STICKY */}
+      {/* HEADER */}
       <div className="sticky top-0 z-[60] bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 py-3 flex justify-between items-center shadow-lg">
             <h1 className="font-serif text-lg font-bold text-gold flex items-center gap-2">
                 <div className="bg-gold/20 p-1.5 rounded-lg"><User size={18} className="text-gold"/></div>
@@ -176,7 +178,7 @@ export default function AdminPage() {
 
       <div className="max-w-[1600px] mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* CỘT TRÁI: FORM */}
+        {/* CỘT TRÁI: FORM (Giữ nguyên vị trí cũ cho Desktop) */}
         <div className="lg:col-span-3 h-fit">
             <div className={`border p-5 rounded-2xl backdrop-blur-md shadow-2xl transition-colors ${editingId ? 'bg-blue-900/10 border-blue-500/50' : 'bg-white/5 border-white/10'}`}>
                 <h2 className={`font-bold mb-4 flex items-center gap-2 text-lg border-b pb-2 ${editingId ? 'text-blue-400 border-blue-500/30' : 'text-white border-white/10'}`}>
@@ -263,7 +265,7 @@ export default function AdminPage() {
             </div>
         </div>
 
-        {/* CỘT PHẢI: DASHBOARD */}
+        {/* CỘT PHẢI: DASHBOARD (Giữ nguyên vị trí cũ) */}
         <div className="lg:col-span-9">
              <div className="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md overflow-hidden flex flex-col min-h-[500px]">
                 {/* TOOLBAR */}
@@ -295,7 +297,7 @@ export default function AdminPage() {
                                 return (
                                     <button key={monthStr} onClick={() => { setCurrentDate(month); setViewMode('month'); }}
                                         className={`flex flex-col items-center justify-center p-4 rounded-xl border h-[100px] active:scale-95 transition ${isCurrentMonth ? 'bg-gold/10 border-gold/50' : 'bg-white/5 border-white/5'}`}>
-                                        <div className={`font-bold capitalize ${isCurrentMonth ? 'text-gold' : 'text-white'}`}>Tháng {format(month, 'MM')}</div>
+                                        <div className={`font-bold capitalize ${isCurrentMonth ? 'text-gold' : 'text-white'}`}>Tháng {format(month, 'MM', { locale: vi })}</div>
                                         <div className={`text-xs mt-2 px-2 py-0.5 rounded-full ${count > 0 ? 'bg-gold text-slate-900 font-bold' : 'bg-white/10 text-slate-500'}`}>{count} lễ</div>
                                     </button>
                                 )
