@@ -2,8 +2,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, Clock, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, Save, CalendarRange, Menu } from 'lucide-react'
-import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isSameDay, isBefore, startOfYear, endOfYear, eachMonthOfInterval, addYears, subYears } from 'date-fns'
+import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, Clock, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, Save, CalendarRange } from 'lucide-react'
+import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isSameDay, isBefore, startOfYear, endOfYear, eachMonthOfInterval } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
 // --- TYPES ---
@@ -109,14 +109,15 @@ export default function AdminPage() {
       setSelectedDateForInput(dateStr);
       setEditingId(null);
       setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' }));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Scroll lên đầu vùng cuộn của Admin Page
+      document.getElementById('admin-container')?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   const startEdit = (item: Schedule) => {
       setForm({ start_time: item.start_time.slice(0,5), title: item.title, priest_name: item.priest_name, note: item.note, location: item.location })
       setSelectedDateForInput(item.date)
       setEditingId(item.id)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      document.getElementById('admin-container')?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   const handleDelete = async (id: number) => {
@@ -159,22 +160,23 @@ export default function AdminPage() {
   const MINUTES = ['00', '15', '30', '45'];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans pb-20"> {/* Cho phép cuộn trang, thêm padding dưới */}
+    // QUAN TRỌNG: h-screen overflow-y-auto cho phép cuộn độc lập
+    <div id="admin-container" className="h-screen overflow-y-auto bg-slate-950 text-slate-200 font-sans pb-32">
       
-      {/* HEADER MOBILE & DESKTOP */}
-      <div className="sticky top-0 z-[60] bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 py-3 flex justify-between items-center">
+      {/* HEADER STICKY */}
+      <div className="sticky top-0 z-[60] bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 py-3 flex justify-between items-center shadow-lg">
             <h1 className="font-serif text-lg font-bold text-gold flex items-center gap-2">
                 <div className="bg-gold/20 p-1.5 rounded-lg"><User size={18} className="text-gold"/></div>
                 Admin Panel
             </h1>
-            <button onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }} className="text-xs font-bold text-red-400 bg-red-900/20 px-3 py-2 rounded-lg">
+            <button onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }} className="text-xs font-bold text-red-400 bg-red-900/20 px-3 py-2 rounded-lg hover:bg-red-900/30 transition">
                 <LogOut size={16}/>
             </button>
       </div>
 
       <div className="max-w-[1600px] mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* CỘT TRÁI: FORM NHẬP (Luôn hiển thị trên cùng ở mobile) */}
+        {/* CỘT TRÁI: FORM */}
         <div className="lg:col-span-3 h-fit">
             <div className={`border p-5 rounded-2xl backdrop-blur-md shadow-2xl transition-colors ${editingId ? 'bg-blue-900/10 border-blue-500/50' : 'bg-white/5 border-white/10'}`}>
                 <h2 className={`font-bold mb-4 flex items-center gap-2 text-lg border-b pb-2 ${editingId ? 'text-blue-400 border-blue-500/30' : 'text-white border-white/10'}`}>
@@ -263,10 +265,9 @@ export default function AdminPage() {
 
         {/* CỘT PHẢI: DASHBOARD */}
         <div className="lg:col-span-9">
-             <div className="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md overflow-hidden flex flex-col min-h-[500px]"> {/* Bỏ height cố định để tự dãn */}
+             <div className="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md overflow-hidden flex flex-col min-h-[500px]">
                 {/* TOOLBAR */}
                 <div className="p-4 border-b border-white/10 flex flex-col gap-4 bg-white/5">
-                    {/* Hàng 1: Tabs - Scroll ngang trên mobile */}
                     <div className="flex items-center gap-2 bg-black/20 p-1 rounded-xl overflow-x-auto no-scrollbar">
                         {['day', 'week', 'month', 'year'].map((m) => (
                             <button key={m} onClick={() => setViewMode(m as ViewMode)} className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 whitespace-nowrap transition capitalize ${viewMode===m ? 'bg-white/10 text-white shadow' : 'text-slate-400'}`}>
@@ -275,7 +276,6 @@ export default function AdminPage() {
                             </button>
                         ))}
                     </div>
-                    {/* Hàng 2: Navigation */}
                     <div className="flex items-center justify-between bg-black/20 p-2 rounded-xl">
                         <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-white/10 rounded-lg text-slate-300"><ChevronLeft/></button>
                         <h2 className="text-white font-bold text-sm uppercase tracking-wider text-center">{getListTitle()}</h2>
@@ -335,7 +335,6 @@ export default function AdminPage() {
                                  const dayStr = format(dayDate, 'yyyy-MM-dd');
                                  const dayEvents = listSchedules.filter(s => s.date === dayStr);
                                  const isT = isToday(dayDate);
-                                 
                                  return (
                                      <div key={i} className={`rounded-xl border p-3 ${isT ? 'border-gold/50 bg-gold/5' : 'border-white/10 bg-white/5'}`}>
                                          <div className="flex justify-between items-center mb-3">
