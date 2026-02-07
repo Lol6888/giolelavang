@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange } from 'lucide-react'
+import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock } from 'lucide-react'
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isSameDay, isBefore, startOfYear, endOfYear, eachMonthOfInterval, addYears, subYears } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
@@ -34,7 +34,6 @@ export default function AdminPage() {
   const calRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
   const locRef = useRef<HTMLDivElement>(null)
-  // Ref cho container chính để scroll
   const mainContainerRef = useRef<HTMLDivElement>(null)
 
   // Click outside
@@ -111,7 +110,6 @@ export default function AdminPage() {
       setSelectedDateForInput(dateStr);
       setEditingId(null);
       setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' }));
-      // Scroll lên đầu vùng cuộn của Admin Page
       mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -162,7 +160,6 @@ export default function AdminPage() {
   const MINUTES = ['00', '15', '30', '45'];
 
   return (
-    // FIX QUAN TRỌNG: h-screen overflow-y-auto -> Tạo thanh cuộn riêng cho trang này
     <div ref={mainContainerRef} className="h-screen w-full bg-slate-950 text-slate-200 font-sans overflow-y-auto overflow-x-hidden pb-32">
       
       {/* HEADER */}
@@ -178,7 +175,7 @@ export default function AdminPage() {
 
       <div className="max-w-[1600px] mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* CỘT TRÁI: FORM (Giữ nguyên vị trí cũ cho Desktop) */}
+        {/* CỘT TRÁI: FORM */}
         <div className="lg:col-span-3 h-fit">
             <div className={`border p-5 rounded-2xl backdrop-blur-md shadow-2xl transition-colors ${editingId ? 'bg-blue-900/10 border-blue-500/50' : 'bg-white/5 border-white/10'}`}>
                 <h2 className={`font-bold mb-4 flex items-center gap-2 text-lg border-b pb-2 ${editingId ? 'text-blue-400 border-blue-500/30' : 'text-white border-white/10'}`}>
@@ -265,63 +262,76 @@ export default function AdminPage() {
             </div>
         </div>
 
-        {/* CỘT PHẢI: DASHBOARD (Giữ nguyên vị trí cũ) */}
+        {/* CỘT PHẢI: DASHBOARD */}
         <div className="lg:col-span-9">
-             <div className="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md overflow-hidden flex flex-col min-h-[500px]">
+             <div className="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md overflow-hidden flex flex-col min-h-[600px] shadow-2xl">
                 {/* TOOLBAR */}
-                <div className="p-4 border-b border-white/10 flex flex-col gap-4 bg-white/5">
-                    <div className="flex items-center gap-2 bg-black/20 p-1 rounded-xl overflow-x-auto no-scrollbar">
+                <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-white/5">
+                    <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
                         {['day', 'week', 'month', 'year'].map((m) => (
-                            <button key={m} onClick={() => setViewMode(m as ViewMode)} className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 whitespace-nowrap transition capitalize ${viewMode===m ? 'bg-white/10 text-white shadow' : 'text-slate-400'}`}>
+                            <button key={m} onClick={() => setViewMode(m as ViewMode)} className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 whitespace-nowrap transition capitalize ${viewMode===m ? 'bg-white/10 text-white shadow ring-1 ring-white/10' : 'text-slate-400 hover:text-white'}`}>
                                 {m==='day' && <LayoutList size={14}/>} {m==='week' && <List size={14}/>} {m==='month' && <Grid3X3 size={14}/>} {m==='year' && <CalendarRange size={14}/>}
                                 {m === 'day' ? 'Ngày' : m === 'week' ? 'Tuần' : m === 'month' ? 'Tháng' : 'Năm'}
                             </button>
                         ))}
                     </div>
-                    <div className="flex items-center justify-between bg-black/20 p-2 rounded-xl">
-                        <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-white/10 rounded-lg text-slate-300"><ChevronLeft/></button>
-                        <h2 className="text-white font-bold text-sm uppercase tracking-wider text-center">{getListTitle()}</h2>
-                        <button onClick={() => navigateDate('next')} className="p-2 hover:bg-white/10 rounded-lg text-slate-300"><ChevronRight/></button>
+                    <div className="flex items-center gap-4 bg-black/40 p-1.5 rounded-xl w-full sm:w-auto justify-between sm:justify-end">
+                        <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-white/10 rounded-lg text-slate-300 transition"><ChevronLeft size={20}/></button>
+                        <h2 className="text-white font-bold text-sm uppercase tracking-wider text-center min-w-[140px]">{getListTitle()}</h2>
+                        <button onClick={() => navigateDate('next')} className="p-2 hover:bg-white/10 rounded-lg text-slate-300 transition"><ChevronRight size={20}/></button>
                     </div>
                 </div>
 
-                <div className="p-4 flex-grow bg-black/20">
+                <div className="p-4 flex-grow bg-black/20 overflow-y-auto custom-scrollbar">
                     
                     {/* VIEW NĂM */}
                     {viewMode === 'year' && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                             {eachMonthOfInterval({ start: startOfYear(currentDate), end: endOfYear(currentDate) }).map(month => {
                                 const monthStr = format(month, 'yyyy-MM');
                                 const isCurrentMonth = isSameMonth(month, new Date());
                                 const count = listSchedules.filter(s => s.date.startsWith(monthStr)).length;
                                 return (
                                     <button key={monthStr} onClick={() => { setCurrentDate(month); setViewMode('month'); }}
-                                        className={`flex flex-col items-center justify-center p-4 rounded-xl border h-[100px] active:scale-95 transition ${isCurrentMonth ? 'bg-gold/10 border-gold/50' : 'bg-white/5 border-white/5'}`}>
-                                        <div className={`font-bold capitalize ${isCurrentMonth ? 'text-gold' : 'text-white'}`}>Tháng {format(month, 'MM', { locale: vi })}</div>
-                                        <div className={`text-xs mt-2 px-2 py-0.5 rounded-full ${count > 0 ? 'bg-gold text-slate-900 font-bold' : 'bg-white/10 text-slate-500'}`}>{count} lễ</div>
+                                        className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border h-[110px] active:scale-95 transition group ${isCurrentMonth ? 'bg-gold/10 border-gold/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
+                                        <div className={`font-serif text-lg font-bold capitalize ${isCurrentMonth ? 'text-gold' : 'text-white'}`}>Tháng {format(month, 'MM', { locale: vi })}</div>
+                                        {count > 0 && <div className="mt-2 text-[10px] font-bold bg-gold text-black px-2 py-0.5 rounded-full">{count} lễ</div>}
                                     </button>
                                 )
                             })}
                         </div>
                     )}
 
-                    {/* VIEW THÁNG */}
+                    {/* VIEW THÁNG (ĐÃ SỬA: HIỆN SỐ LƯỢNG) */}
                     {viewMode === 'month' && (
-                        <div>
+                        <div className="h-full flex flex-col">
                              <div className="grid grid-cols-7 gap-1 mb-2">
-                                {['T2','T3','T4','T5','T6','T7','CN'].map(d => <div key={d} className="text-center text-[10px] font-bold text-slate-500 uppercase">{d}</div>)}
+                                {['T2','T3','T4','T5','T6','T7','CN'].map(d => <div key={d} className="text-center text-[10px] font-bold text-slate-500 uppercase py-2">{d}</div>)}
                              </div>
-                             <div className="grid grid-cols-7 gap-1">
+                             <div className="grid grid-cols-7 gap-1 sm:gap-2 auto-rows-fr">
                                 {eachDayOfInterval({ start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }), end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 1 }) }).map((day) => {
                                     const dayStr = format(day, 'yyyy-MM-dd');
                                     const isCurrent = isSameMonth(day, currentDate);
+                                    const isSelected = selectedDateForInput === dayStr;
                                     const count = listSchedules.filter(s => s.date === dayStr).length;
                                     const isTodayDate = isToday(day);
+                                    
+                                    // Style động
+                                    let cellClass = "relative aspect-square sm:aspect-[4/3] flex flex-col items-center justify-start pt-2 rounded-xl border cursor-pointer transition active:scale-95 ";
+                                    if(!isCurrent) cellClass += "opacity-30 border-transparent hover:bg-white/5 ";
+                                    else if(isSelected) cellClass += "bg-gold/20 border-gold text-gold ";
+                                    else if(isTodayDate) cellClass += "bg-white/10 border-blue-500/50 text-blue-400 ";
+                                    else cellClass += "bg-white/5 border-white/5 hover:bg-white/10 ";
+
                                     return (
-                                        <div key={dayStr} onClick={() => { setCurrentDate(day); setViewMode('day'); prepareAddForDate(dayStr); }}
-                                            className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer ${!isCurrent ? 'opacity-30' : ''} ${isTodayDate ? 'border border-gold text-gold' : 'bg-white/5'}`}>
-                                            <span className="text-sm font-bold">{format(day, 'd')}</span>
-                                            {count > 0 && <div className="mt-1 w-1.5 h-1.5 bg-gold rounded-full"></div>}
+                                        <div key={dayStr} onClick={() => { setCurrentDate(day); setViewMode('day'); prepareAddForDate(dayStr); }} className={cellClass}>
+                                            <span className="text-sm sm:text-lg font-bold font-mono">{format(day, 'd')}</span>
+                                            {/* HIỂN THỊ SỐ LƯỢNG LỄ */}
+                                            {count > 0 && (
+                                                <div className="mt-1 sm:mt-2 bg-gold text-slate-900 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-lg">
+                                                    {count}
+                                                </div>
+                                            )}
                                         </div>
                                     )
                                 })}
@@ -329,36 +339,45 @@ export default function AdminPage() {
                         </div>
                     )}
 
-                    {/* VIEW TUẦN */}
+                    {/* VIEW TUẦN (ĐÃ SỬA: LAYOUT THOÁNG HƠN) */}
                     {viewMode === 'week' && (
-                         <div className="space-y-4">
+                         <div className="space-y-6 pb-10">
                              {Array.from({length: 7}).map((_, i) => {
                                  const dayDate = addDays(startOfWeek(currentDate, { weekStartsOn: 1 }), i);
                                  const dayStr = format(dayDate, 'yyyy-MM-dd');
                                  const dayEvents = listSchedules.filter(s => s.date === dayStr);
                                  const isT = isToday(dayDate);
+                                 
                                  return (
-                                     <div key={i} className={`rounded-xl border p-3 ${isT ? 'border-gold/50 bg-gold/5' : 'border-white/10 bg-white/5'}`}>
-                                         <div className="flex justify-between items-center mb-3">
-                                             <div className="font-bold text-white capitalize">{format(dayDate, 'EEEE', { locale: vi })}</div>
-                                             <div className="text-xs text-slate-400">{format(dayDate, 'dd/MM')}</div>
+                                     <div key={i} className={`rounded-2xl border overflow-hidden ${isT ? 'border-gold/50 bg-gold/5' : 'border-white/10 bg-white/5'}`}>
+                                         {/* Header ngày */}
+                                         <div className={`flex justify-between items-center p-3 sm:p-4 border-b ${isT ? 'border-gold/20 bg-gold/10' : 'border-white/5 bg-white/5'}`}>
+                                             <div className="flex items-center gap-3">
+                                                 <div className={`text-2xl font-bold font-mono ${isT ? 'text-gold' : 'text-slate-400'}`}>{format(dayDate, 'dd')}</div>
+                                                 <div className={`font-bold uppercase text-sm ${isT ? 'text-gold' : 'text-white'}`}>{format(dayDate, 'EEEE', { locale: vi })}</div>
+                                             </div>
+                                             <button onClick={() => prepareAddForDate(dayStr)} className="p-1.5 rounded-lg bg-white/10 hover:bg-gold hover:text-black transition"><Plus size={16}/></button>
                                          </div>
-                                         <div className="space-y-2">
-                                            {dayEvents.length === 0 && <button onClick={() => prepareAddForDate(dayStr)} className="w-full py-2 border border-dashed border-white/10 rounded text-slate-500 text-xs flex items-center justify-center gap-1"><Plus size={12}/> Thêm Lễ</button>}
+                                         
+                                         {/* Danh sách lễ trong ngày */}
+                                         <div className="p-2 sm:p-3 space-y-2">
+                                            {dayEvents.length === 0 && <div className="text-center py-4 text-xs text-slate-600 italic">Chưa có lịch lễ</div>}
                                             {dayEvents.map(ev => (
-                                                <div key={ev.id} className="bg-black/30 p-3 rounded-lg flex gap-3 relative group">
-                                                    <div className="font-mono text-gold font-bold">{ev.start_time.slice(0,5)}</div>
-                                                    <div className="flex-grow">
-                                                        <div className="font-bold text-white">{ev.title}</div>
-                                                        <div className="text-xs text-slate-400">{ev.location}</div>
+                                                <div key={ev.id} className="bg-black/40 border border-white/5 hover:border-white/20 p-3 sm:p-4 rounded-xl flex items-center gap-4 group transition">
+                                                    <div className="font-mono text-gold font-bold text-lg">{ev.start_time.slice(0,5)}</div>
+                                                    <div className="flex-grow min-w-0">
+                                                        <div className="font-bold text-white text-base truncate">{ev.title}</div>
+                                                        <div className="flex items-center gap-4 text-xs text-slate-400 mt-1">
+                                                            <span className="flex items-center gap-1"><MapPin size={12}/> {ev.location}</span>
+                                                            <span className="flex items-center gap-1"><User size={12}/> {ev.priest_name || '...'}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => startEdit(ev)} className="text-slate-500 hover:text-blue-400"><Edit size={16}/></button>
-                                                        <button onClick={() => handleDelete(ev.id)} className="text-slate-500 hover:text-red-400"><Trash2 size={16}/></button>
+                                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => startEdit(ev)} className="p-2 bg-blue-900/30 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white"><Edit size={16}/></button>
+                                                        <button onClick={() => handleDelete(ev.id)} className="p-2 bg-red-900/30 text-red-400 rounded-lg hover:bg-red-600 hover:text-white"><Trash2 size={16}/></button>
                                                     </div>
                                                 </div>
                                             ))}
-                                            {dayEvents.length > 0 && <button onClick={() => prepareAddForDate(dayStr)} className="w-full py-1.5 border border-dashed border-white/10 rounded text-slate-500 hover:text-gold text-xs mt-2">+ Thêm</button>}
                                          </div>
                                      </div>
                                  )
@@ -366,30 +385,33 @@ export default function AdminPage() {
                          </div>
                     )}
 
-                    {/* VIEW NGÀY */}
+                    {/* VIEW NGÀY (GIỮ NGUYÊN) */}
                     {viewMode === 'day' && (
-                        <div className="space-y-3">
+                        <div className="space-y-3 pb-10">
                             {listSchedules.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-slate-500 border-2 border-dashed border-white/5 rounded-2xl">
-                                    <p className="mb-4 text-sm">Trống lịch</p>
-                                    <button onClick={() => prepareAddForDate(format(currentDate, 'yyyy-MM-dd'))} className="bg-gold text-slate-900 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
-                                        <Plus size={16}/> Tạo Lịch Ngay
+                                <div className="flex flex-col items-center justify-center py-20 text-slate-500 border-2 border-dashed border-white/5 rounded-3xl bg-white/5">
+                                    <Clock size={48} className="mb-4 opacity-20"/>
+                                    <p className="mb-4 text-sm font-medium">Hôm nay chưa có lễ nào</p>
+                                    <button onClick={() => prepareAddForDate(format(currentDate, 'yyyy-MM-dd'))} className="bg-gold hover:bg-yellow-400 text-slate-900 px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition shadow-lg shadow-gold/20">
+                                        <Plus size={18}/> Tạo Lịch Ngay
                                     </button>
                                 </div>
                             ) : (
                                 listSchedules.map(item => {
                                     const isPast = isPastEvent(item.date, item.start_time);
                                     return (
-                                    <div key={item.id} className={`flex gap-3 p-4 rounded-xl border transition ${isPast ? 'bg-slate-900/50 border-slate-800 opacity-60' : 'bg-black/40 border-white/10'}`}>
-                                        <div className={`font-mono font-bold text-lg ${isPast ? 'text-slate-500' : 'text-gold'}`}>{item.start_time.slice(0,5)}</div>
+                                    <div key={item.id} className={`flex gap-4 p-5 rounded-2xl border transition group ${isPast ? 'bg-slate-900/50 border-slate-800 opacity-60' : 'bg-black/40 border-white/10 hover:border-white/30'}`}>
+                                        <div className={`font-mono font-bold text-xl ${isPast ? 'text-slate-500' : 'text-gold'}`}>{item.start_time.slice(0,5)}</div>
                                         <div className="flex-grow">
-                                            <div className={`font-bold ${isPast ? 'text-slate-500' : 'text-white'}`}>{item.title}</div>
-                                            <div className="text-xs text-slate-500 flex items-center gap-1 mt-1"><MapPin size={10}/> {item.location}</div>
-                                            <div className="text-xs text-slate-500 mt-1 italic">{item.priest_name}</div>
+                                            <div className={`font-bold text-lg ${isPast ? 'text-slate-500' : 'text-white'}`}>{item.title}</div>
+                                            <div className="text-sm text-slate-500 flex items-center gap-3 mt-1">
+                                                <span className="flex items-center gap-1"><MapPin size={12}/> {item.location}</span>
+                                                <span className="flex items-center gap-1"><User size={12}/> {item.priest_name}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col gap-2 justify-center">
-                                            <button onClick={() => startEdit(item)} className="p-2 bg-white/5 rounded text-slate-400"><Edit size={16}/></button>
-                                            <button onClick={() => handleDelete(item.id)} className="p-2 bg-red-900/20 rounded text-red-400"><Trash2 size={16}/></button>
+                                        <div className="flex flex-col gap-2 justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => startEdit(item)} className="p-2 bg-white/5 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-white/10"><Edit size={18}/></button>
+                                            <button onClick={() => handleDelete(item.id)} className="p-2 bg-red-900/10 rounded-lg text-red-400 hover:bg-red-600 hover:text-white"><Trash2 size={18}/></button>
                                         </div>
                                     </div>
                                 )})
