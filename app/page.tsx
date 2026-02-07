@@ -246,25 +246,57 @@ export default function CinematicHome() {
                         </div>
                         <div className="overflow-y-auto flex-grow p-3 sm:p-4 custom-scrollbar">
                             <div className="space-y-2 sm:space-y-3 relative pl-4 before:absolute before:left-[27px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
-                                {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-xs">Không có lễ.</p> :
-                                schedules.map(ev => {
-                                    const isPast = ev.start_time < format(now, 'HH:mm:ss') && status.item?.id !== ev.id;
-                                    const isActive = status.item?.id === ev.id;
-                                    return (
-                                        <div key={ev.id} className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-all border border-transparent group ${isActive ? 'bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 shadow-lg transform scale-[1.02]' : (isPast ? 'opacity-40 grayscale hover:opacity-100' : 'hover:bg-white/10')}`}>
-                                            <div className={`w-12 sm:w-16 text-right text-base sm:text-lg text-shadow-light font-mono ${isActive ? 'text-red-400' : 'text-white'}`}>{ev.start_time.slice(0,5)}</div>
-                                            <div className="flex-grow min-w-0">
-                                                <div className={`text-sm sm:text-base text-shadow-light truncate ${isActive ? 'text-white font-bold' : 'text-white/90'}`}>{ev.title}</div>
-                                                <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-white/70 uppercase font-bold tracking-wider my-0.5 truncate">
-                                                    <MapPin size={10}/> {ev.location}
-                                                </div>
-                                                <div className="text-[11px] sm:text-xs text-white/60 truncate italic">{ev.priest_name}</div>
-                                            </div>
-                                            {isActive && <span className="text-[9px] sm:text-[10px] font-bold bg-red-600 text-white px-1.5 sm:px-2 py-0.5 rounded shadow animate-pulse shrink-0">LIVE</span>}
-                                        </div>
-                                    )
-                                })}
-                            </div>
+    {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-xs">Không có lễ.</p> :
+    schedules.map(ev => {
+        // LOGIC MỚI: Tách rõ 3 trạng thái
+        const isHappening = status.type === 'happening' && status.item?.id === ev.id;
+        const isUpcoming = (status.type === 'upcoming' || status.type === 'countdown') && status.item?.id === ev.id;
+        const isPast = ev.start_time < format(now, 'HH:mm:ss') && !isHappening && !isUpcoming;
+
+        // CSS class động dựa theo trạng thái
+        let rowClass = "flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-all border border-transparent group ";
+        
+        if (isHappening) {
+            // ĐANG DIỄN RA: Màu Đỏ + Nổi bật
+            rowClass += "bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 shadow-lg transform scale-[1.02]";
+        } else if (isUpcoming) {
+            // SẮP TỚI: Màu Vàng + Viền nhẹ (Để biết thẻ to bên trái đang nói về nó)
+            rowClass += "bg-white/5 border-l-4 border-l-gold/50";
+        } else if (isPast) {
+            // ĐÃ QUA: Mờ + Xám
+            rowClass += "opacity-40 grayscale hover:opacity-100 hover:grayscale-0";
+        } else {
+            // BÌNH THƯỜNG (Các lễ xa hơn trong ngày)
+            rowClass += "hover:bg-white/10";
+        }
+
+        return (
+            <div key={ev.id} className={rowClass}>
+                {/* GIỜ LỄ */}
+                <div className={`w-12 sm:w-16 text-right text-base sm:text-lg text-shadow-light font-mono 
+                    ${isHappening ? 'text-red-400 font-bold' : (isUpcoming ? 'text-gold font-bold' : 'text-white')}`}>
+                    {ev.start_time.slice(0,5)}
+                </div>
+
+                {/* NỘI DUNG */}
+                <div className="flex-grow min-w-0">
+                    <div className={`text-sm sm:text-base text-shadow-light truncate 
+                        ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
+                        {ev.title}
+                    </div>
+                    <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-white/70 uppercase font-bold tracking-wider my-0.5 truncate">
+                        <MapPin size={10}/> {ev.location}
+                    </div>
+                    <div className="text-[11px] sm:text-xs text-white/60 truncate italic">{ev.priest_name}</div>
+                </div>
+
+                {/* BADGE TRẠNG THÁI */}
+                {isHappening && <span className="text-[9px] sm:text-[10px] font-bold bg-red-600 text-white px-1.5 sm:px-2 py-0.5 rounded shadow animate-pulse shrink-0">LIVE</span>}
+                {isUpcoming && <span className="text-[9px] sm:text-[10px] font-bold bg-gold/20 text-gold border border-gold/30 px-1.5 sm:px-2 py-0.5 rounded shrink-0">SẮP TỚI</span>}
+            </div>
+        )
+    })}
+</div>
                         </div>
                     </div>
                 </div>
