@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock } from 'lucide-react'
+import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock, Lock } from 'lucide-react'
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isBefore, startOfYear, endOfYear, eachMonthOfInterval, addYears, subYears } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
@@ -31,7 +31,7 @@ export default function AdminPage() {
   const [form, setForm] = useState({ start_time: '05:00', title: '', priest_name: '', note: '', location: '' })
   const [editingId, setEditingId] = useState<number | null>(null)
 
-  // -- REFS (Đã fix type chuẩn HTMLDivElement) --
+  // -- REFS --
   const calRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
   const locRef = useRef<HTMLDivElement>(null)
@@ -40,7 +40,6 @@ export default function AdminPage() {
   // CLICK OUTSIDE
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // Ép kiểu Node để tránh lỗi đỏ TypeScript
       if (calRef.current && !calRef.current.contains(event.target as Node)) setShowCalendar(false)
       if (timeRef.current && !timeRef.current.contains(event.target as Node)) setShowTimePicker(false)
       if (locRef.current && !locRef.current.contains(event.target as Node)) setShowLocPicker(false)
@@ -148,13 +147,16 @@ export default function AdminPage() {
       await supabase.from('locations').delete().eq('id', id); loadLocations();
   }
 
-  const isPastEvent = (dateStr: string, timeStr: string) => isBefore(new Date(`${dateStr}T${timeStr}`), new Date());
+  // LOGIC CHECK NGÀY CŨ
+  const isPastEvent = (dateStr: string, timeStr: string) => {
+      const eventDate = new Date(`${dateStr}T${timeStr}`);
+      return isBefore(eventDate, new Date());
+  };
   
   // --- HELPERS ---
   const displayDateInput = () => isValid(parseISO(selectedDateForInput)) ? format(parseISO(selectedDateForInput), 'dd/MM/yyyy') : '...';
   
   const navigateDate = (dir: 'prev' | 'next') => {
-      // Fix lỗi logic: xác định đúng hàm tăng giảm dựa trên viewMode
       if (viewMode === 'day') setCurrentDate(dir==='next' ? addDays(currentDate, 1) : subDays(currentDate, 1));
       else if (viewMode === 'week') setCurrentDate(dir==='next' ? addDays(currentDate, 7) : subDays(currentDate, 7));
       else if (viewMode === 'month') setCurrentDate(dir==='next' ? addMonths(currentDate, 1) : subMonths(currentDate, 1));
@@ -339,7 +341,7 @@ export default function AdminPage() {
                         </div>
                     )}
 
-                    {/* --- VIEW THÁNG --- */}
+                    {/* --- VIEW THÁNG (CÓ BADGE SỐ LƯỢNG) --- */}
                     {viewMode === 'month' && (
                         <div className="h-full flex flex-col">
                              <div className="grid grid-cols-7 gap-1 mb-2">
@@ -374,7 +376,7 @@ export default function AdminPage() {
                         </div>
                     )}
 
-                    {/* --- VIEW TUẦN --- */}
+                    {/* --- VIEW TUẦN (NÚT BẤM TO, KHÓA LỊCH CŨ) --- */}
                     {viewMode === 'week' && (
                          <div className="space-y-6 pb-20">
                              {Array.from({length: 7}).map((_, i) => {
@@ -397,29 +399,37 @@ export default function AdminPage() {
                                          {/* Danh sách lễ */}
                                          <div className="p-2 sm:p-3 space-y-3">
                                             {dayEvents.length === 0 && <div className="text-center py-4 text-xs text-slate-600 italic">Chưa có lịch lễ</div>}
-                                            {dayEvents.map(ev => (
-                                                <div key={ev.id} className="bg-black/40 border border-white/5 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center gap-4 transition hover:border-white/20">
+                                            {dayEvents.map(ev => {
+                                                const isPast = isPastEvent(ev.date, ev.start_time);
+                                                return (
+                                                <div key={ev.id} className={`border p-4 rounded-xl flex flex-col sm:flex-row sm:items-center gap-4 transition ${isPast ? 'bg-slate-900/50 border-white/5 opacity-70' : 'bg-black/40 border-white/5 hover:border-white/20'}`}>
                                                     <div className="flex items-start sm:items-center gap-4 flex-grow">
-                                                         <div className="font-mono text-gold font-bold text-xl pt-1 sm:pt-0">{ev.start_time.slice(0,5)}</div>
+                                                         <div className={`font-mono font-bold text-xl pt-1 sm:pt-0 ${isPast ? 'text-slate-500' : 'text-gold'}`}>{ev.start_time.slice(0,5)}</div>
                                                          <div className="min-w-0">
-                                                             <div className="font-bold text-white text-lg truncate">{ev.title}</div>
+                                                             <div className={`font-bold text-lg truncate ${isPast ? 'text-slate-500' : 'text-white'}`}>{ev.title}</div>
                                                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-slate-400 mt-1">
                                                                  <span className="flex items-center gap-1"><MapPin size={14}/> {ev.location}</span>
                                                                  {ev.priest_name && <span className="flex items-center gap-1"><User size={14}/> {ev.priest_name}</span>}
                                                              </div>
                                                          </div>
                                                     </div>
-                                                    {/* Nút thao tác */}
-                                                    <div className="flex gap-3 pt-3 mt-1 border-t border-white/10 sm:pt-0 sm:mt-0 sm:border-t-0 sm:border-l sm:pl-4 sm:border-white/10">
-                                                        <button onClick={() => startEdit(ev)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-900/20 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition font-medium text-sm active:scale-95">
-                                                            <Edit size={18}/> <span className="sm:hidden">Sửa</span>
-                                                        </button>
-                                                        <button onClick={() => handleDelete(ev.id)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-900/20 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition font-medium text-sm active:scale-95">
-                                                            <Trash2 size={18}/> <span className="sm:hidden">Xóa</span>
-                                                        </button>
-                                                    </div>
+                                                    {/* Nút thao tác (Ẩn nếu là lịch cũ) */}
+                                                    {isPast ? (
+                                                        <div className="flex gap-2 items-center text-slate-500 text-xs font-bold bg-white/5 px-3 py-2 rounded-lg justify-center sm:justify-start">
+                                                            <Lock size={14}/> Đã kết thúc
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-3 pt-3 mt-1 border-t border-white/10 sm:pt-0 sm:mt-0 sm:border-t-0 sm:border-l sm:pl-4 sm:border-white/10">
+                                                            <button onClick={() => startEdit(ev)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-900/20 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition font-medium text-sm active:scale-95">
+                                                                <Edit size={18}/> <span className="sm:hidden">Sửa</span>
+                                                            </button>
+                                                            <button onClick={() => handleDelete(ev.id)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-900/20 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition font-medium text-sm active:scale-95">
+                                                                <Trash2 size={18}/> <span className="sm:hidden">Xóa</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            ))}
+                                            )})}
                                          </div>
                                      </div>
                                  )
@@ -427,7 +437,7 @@ export default function AdminPage() {
                          </div>
                     )}
 
-                    {/* --- VIEW NGÀY --- */}
+                    {/* --- VIEW NGÀY (THẺ TO, NÚT DỄ BẤM, KHÓA LỊCH CŨ) --- */}
                     {viewMode === 'day' && (
                         <div className="space-y-4 pb-20">
                             {listSchedules.length === 0 ? (
@@ -453,14 +463,23 @@ export default function AdminPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex sm:flex-col gap-3 pt-3 border-t border-white/5 sm:border-t-0 sm:pt-0 sm:pl-4 sm:border-l sm:border-white/10">
-                                            <button onClick={() => startEdit(item)} className="flex-1 sm:flex-none p-3 bg-blue-900/20 text-blue-400 rounded-xl hover:bg-blue-600 hover:text-white transition flex justify-center items-center active:scale-95">
-                                                <Edit size={20}/> <span className="ml-2 font-bold sm:hidden">Sửa</span>
-                                            </button>
-                                            <button onClick={() => handleDelete(item.id)} className="flex-1 sm:flex-none p-3 bg-red-900/20 text-red-400 rounded-xl hover:bg-red-600 hover:text-white transition flex justify-center items-center active:scale-95">
-                                                <Trash2 size={20}/> <span className="ml-2 font-bold sm:hidden">Xóa</span>
-                                            </button>
-                                        </div>
+                                        {/* Nút bấm (Ẩn nếu là lịch cũ) */}
+                                        {isPast ? (
+                                            <div className="flex justify-center sm:flex-col sm:justify-center border-t border-white/5 pt-3 sm:border-t-0 sm:pt-0 sm:pl-4 sm:border-l sm:border-white/10">
+                                                <div className="text-slate-500 text-xs font-bold bg-white/5 px-4 py-2 rounded-lg flex items-center gap-2">
+                                                    <Lock size={16}/> Đã kết thúc
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex sm:flex-col gap-3 pt-3 border-t border-white/5 sm:border-t-0 sm:pt-0 sm:pl-4 sm:border-l sm:border-white/10">
+                                                <button onClick={() => startEdit(item)} className="flex-1 sm:flex-none p-3 bg-blue-900/20 text-blue-400 rounded-xl hover:bg-blue-600 hover:text-white transition flex justify-center items-center active:scale-95">
+                                                    <Edit size={20}/> <span className="ml-2 font-bold sm:hidden">Sửa</span>
+                                                </button>
+                                                <button onClick={() => handleDelete(item.id)} className="flex-1 sm:flex-none p-3 bg-red-900/20 text-red-400 rounded-xl hover:bg-red-600 hover:text-white transition flex justify-center items-center active:scale-95">
+                                                    <Trash2 size={20}/> <span className="ml-2 font-bold sm:hidden">Xóa</span>
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 )})
                             )}
