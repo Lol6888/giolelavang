@@ -196,7 +196,7 @@ export default function CinematicHome() {
                             <div className={cardStyle}>
                                 <div className="flex items-center gap-2 mb-2 sm:mb-3"><div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full shadow-[0_0_10px_#4ade80]"></div><span className="text-[10px] sm:text-xs font-bold text-green-300 uppercase tracking-widest">Sẵn sàng</span></div>
                                 <div className="mb-3 sm:mb-4">
-                                    <div className="text-gold-light text-[10px] sm:text-xs uppercase tracking-[0.2em] mb-1 font-bold">Thánh Lễ Kế Tiếp</div>
+                                    <div className="text-gold-light text-[10px] sm:text-xs uppercase tracking-[0.2em] mb-4 font-bold">Thánh Lễ Kế Tiếp</div>
                                     <h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-6xl text-white text-shadow leading-tight">{status.item.title}</h1>
                                 </div>
                                 <div className="flex gap-4 sm:gap-6 border-t border-white/20 pt-3 sm:pt-4">
