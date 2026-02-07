@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --foreground-rgb: 255, 255, 255; }
+body { color: rgb(var(--foreground-rgb)); background: #000; overflow: hidden; /* Quan trọng để scroll mượt */ }
+
+/* Scrollbar ẩn nhưng vẫn scroll được */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+/* Hiệu ứng chữ đổ bóng cao cấp */
+.text-shadow { text-shadow: 0 4px 12px rgba(0,0,0,0.9); }
+.text-shadow-light { text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
+
+/* Hiệu ứng Kính Mờ (Glassmorphism) chuẩn */
+.glass-panel {
+    background: rgba(20, 20, 30, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Hiệu ứng Ray (Tia nắng) */
+.ray_box { position: absolute; top: -100px; right: -100px; width: 0; height: 0; animation: ray_anim 120s linear infinite; pointer-events: none; z-index: 10; }
+.ray { background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 100%); margin-left: 10px; border-radius: 80% 80% 0 0; position: absolute; opacity: 0.2; }
+@keyframes ray_anim { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Marquee */
+.marquee-container { overflow: hidden; white-space: nowrap; }
+.marquee-content { display: inline-block; animation: marquee 40s linear infinite; }
+@keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+/* Modal Animation */
+.modal-enter { opacity: 0; transform: scale(0.95); }
+.modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 300ms, transform 300ms; }
+.modal-exit { opacity: 1; transform: scale(1); }
+.modal-exit-active { opacity: 0; transform: scale(0.95); transition: opacity 300ms, transform 300ms; }
