@@ -204,8 +204,9 @@ export default function AdminPage() {
                     {/* INPUT: NGÀY */}
                     <div className="space-y-1.5 relative" ref={calRef}>
                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Ngày diễn ra</label>
+                        {/* UPDATE FONT MONO CHO NGÀY */}
                         <div onClick={() => setShowCalendar(!showCalendar)} className="w-full bg-black/40 border border-white/10 hover:border-white/30 rounded-xl p-3.5 text-white flex justify-between items-center cursor-pointer active:scale-95 transition group">
-                            <span className="font-bold text-lg group-hover:text-gold transition">{displayDateInput()}</span>
+                            <span className="font-bold text-lg group-hover:text-gold transition font-mono">{displayDateInput()}</span>
                             <CalIcon size={20} className="text-white/50 group-hover:text-gold"/>
                         </div>
                         {showCalendar && (
@@ -221,8 +222,9 @@ export default function AdminPage() {
                                         const isSelected = selectedDateForInput === format(day, 'yyyy-MM-dd');
                                         const isCurrentMonth = isSameMonth(day, parseISO(selectedDateForInput));
                                         return (
+                                            /* UPDATE FONT MONO CHO LỊCH */
                                             <button key={idx} type="button" onClick={() => { setSelectedDateForInput(format(day, 'yyyy-MM-dd')); setShowCalendar(false); }}
-                                                className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition ${!isCurrentMonth ? 'text-slate-700' : 'text-slate-300'} ${isSelected ? 'bg-gold text-black font-bold shadow-lg scale-110' : 'hover:bg-white/10'}`}>
+                                                className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition font-mono ${!isCurrentMonth ? 'text-slate-700' : 'text-slate-300'} ${isSelected ? 'bg-gold text-black font-bold shadow-lg scale-110' : 'hover:bg-white/10'}`}>
                                                 {format(day, 'd')}
                                             </button>
                                         )
@@ -241,8 +243,8 @@ export default function AdminPage() {
                              </div>
                              {showTimePicker && (
                                 <div className="absolute top-full left-0 mt-2 w-[280px] bg-slate-900 border border-white/20 rounded-2xl shadow-2xl p-4 z-[100] grid grid-cols-2 gap-2">
-                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-1 space-y-1">{HOURS.map(h => (<button key={h} type="button" onClick={() => setForm(prev => ({...prev, start_time: `${h}:${prev.start_time.split(':')[1]}`}))} className={`w-full py-2 rounded-lg text-sm font-bold transition ${form.start_time.startsWith(h) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{h}</button>))}</div>
-                                    <div className="space-y-1">{MINUTES.map(m => (<button key={m} type="button" onClick={() => { setForm(prev => ({...prev, start_time: `${prev.start_time.split(':')[0]}:${m}`})); setShowTimePicker(false); }} className={`w-full py-2 rounded-lg text-sm font-bold transition ${form.start_time.endsWith(m) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{m}</button>))}</div>
+                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-1 space-y-1">{HOURS.map(h => (<button key={h} type="button" onClick={() => setForm(prev => ({...prev, start_time: `${h}:${prev.start_time.split(':')[1]}`}))} className={`w-full py-2 rounded-lg text-sm font-bold transition font-mono ${form.start_time.startsWith(h) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{h}</button>))}</div>
+                                    <div className="space-y-1">{MINUTES.map(m => (<button key={m} type="button" onClick={() => { setForm(prev => ({...prev, start_time: `${prev.start_time.split(':')[0]}:${m}`})); setShowTimePicker(false); }} className={`w-full py-2 rounded-lg text-sm font-bold transition font-mono ${form.start_time.endsWith(m) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{m}</button>))}</div>
                                 </div>
                              )}
                         </div>
@@ -332,7 +334,8 @@ export default function AdminPage() {
                                         className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border h-[120px] active:scale-95 transition group ${isCurrentMonth ? 'bg-gold/10 border-gold/50' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
                                         <div className={`font-serif text-xl font-bold capitalize ${isCurrentMonth ? 'text-gold' : 'text-white'}`}>Tháng {format(month, 'MM', { locale: vi })}</div>
                                         {count > 0 ? 
-                                            <div className="mt-2 text-xs font-bold bg-gold text-black px-3 py-1 rounded-full shadow-lg">{count} lễ</div> :
+                                            /* UPDATE FONT MONO CHO BADGE */
+                                            <div className="mt-2 text-xs font-bold bg-gold text-black px-3 py-1 rounded-full shadow-lg font-mono">{count} lễ</div> :
                                             <div className="mt-2 text-xs font-bold text-slate-600 px-3 py-1">-</div>
                                         }
                                     </button>
@@ -365,7 +368,8 @@ export default function AdminPage() {
                                         <div key={dayStr} onClick={() => { setCurrentDate(day); setViewMode('day'); prepareAddForDate(dayStr); }} className={cellClass}>
                                             <span className="text-base sm:text-xl font-bold font-mono">{format(day, 'd')}</span>
                                             {count > 0 && (
-                                                <div className="mt-1 sm:mt-2 bg-gold text-slate-900 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-lg animate-fade-in">
+                                                /* UPDATE FONT MONO CHO BADGE THÁNG */
+                                                <div className="mt-1 sm:mt-2 bg-gold text-slate-900 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-lg animate-fade-in font-mono">
                                                     {count}
                                                 </div>
                                             )}
