@@ -15,7 +15,8 @@ const config: Config = {
       fontFamily: {
         serif: ['var(--font-playfair)', 'serif'],
         sans: ['var(--font-vietnam)', 'sans-serif'],
-        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
+        // UPDATE QUAN TRỌNG: Chuyển mono sang dùng Montserrat
+        mono: ['var(--font-montserrat)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
       },
       backgroundImage: {
         'basilica': "url('https://images.pexels.com/photos/35775048/pexels-photo-35775048.png')",

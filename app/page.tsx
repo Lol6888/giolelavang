@@ -132,7 +132,7 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - Đã chỉnh khoảng cách chữ */}
+        {/* MARQUEE */}
         <div className="sticky top-0 z-[60] bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm py-2 px-4 border-b border-white/10 shrink-0">
              <div className="marquee-container w-full">
                 <div className="marquee-content font-medium flex items-center">
@@ -147,7 +147,7 @@ export default function CinematicHome() {
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
             <div className="max-w-[1800px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0">
                 
-                {/* SPACER MOBILE - Tạo khoảng trống để thấy hình nền trên điện thoại */}
+                {/* SPACER MOBILE */}
                 <div className="lg:hidden w-full h-[45vh] shrink-0 pointer-events-none"></div>
 
                 {/* LEFT COLUMN */}
@@ -173,7 +173,7 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 2. COUNTDOWN */}
+                        {/* 2. COUNTDOWN - Updated Font Mono */}
                         {status.type === 'countdown' && status.item && (
                             <div className={`${cardStyle} border-gold/30`}>
                                 <div className="bg-gold text-marian-dark font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded inline-block mb-2 sm:mb-3 uppercase tracking-widest shadow-lg">Sắp diễn ra</div>
@@ -184,6 +184,7 @@ export default function CinematicHome() {
                                 </div>
                                 <div className="bg-black/30 rounded-xl p-2 sm:p-3 border border-white/10 mb-1 inline-block w-full text-center lg:text-left">
                                     <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">Thời gian còn lại</div>
+                                    {/* FONT MONTSERRAT ÁP DỤNG Ở ĐÂY QUA CLASS FONT-MONO */}
                                     <div className="font-mono text-4xl sm:text-5xl lg:text-7xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
                                         {status.diff} phút
                                     </div>
@@ -191,7 +192,7 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 3. UPCOMING */}
+                        {/* 3. UPCOMING - Updated Font Mono */}
                         {status.type === 'upcoming' && status.item && (
                             <div className={cardStyle}>
                                 <div className="flex items-center gap-2 mb-2 sm:mb-3"><div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full shadow-[0_0_10px_#4ade80]"></div><span className="text-[10px] sm:text-xs font-bold text-green-300 uppercase tracking-widest">Sẵn sàng</span></div>
@@ -200,7 +201,8 @@ export default function CinematicHome() {
                                     <h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-6xl text-white text-shadow leading-tight">{status.item.title}</h1>
                                 </div>
                                 <div className="flex gap-4 sm:gap-6 border-t border-white/20 pt-3 sm:pt-4">
-                                    <div><div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div><div className="text-xl sm:text-2xl font-bold text-white">{status.item.start_time.slice(0,5)}</div></div>
+                                    {/* GIỜ LỄ DÙNG FONT MONO */}
+                                    <div><div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div><div className="text-xl sm:text-2xl font-bold text-white font-mono">{status.item.start_time.slice(0,5)}</div></div>
                                     <div className="w-px bg-white/20"></div>
                                     <div><div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Địa điểm</div><div className="text-xl sm:text-2xl font-serif italic text-white">{status.item.location}</div></div>
                                 </div>
@@ -215,14 +217,16 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* WIDGETS */}
+                        {/* WIDGETS - Updated Font Mono */}
                         <div className={widgetContainerStyle}>
                             <div className={widgetStyle}>
                                 {weather.code >= 51 ? <CloudRain className="text-blue-400 w-6 h-6 sm:w-8 sm:h-8"/> : <Sun className="text-yellow-400 w-6 h-6 sm:w-8 sm:h-8"/>}
-                                <div><div className="text-xl sm:text-2xl font-bold text-white">{weather.temp}°C</div><div className="text-[10px] sm:text-xs text-white/70 uppercase font-bold">{weather.desc}</div></div>
+                                {/* NHIỆT ĐỘ DÙNG FONT MONO */}
+                                <div><div className="text-xl sm:text-2xl font-bold text-white font-mono">{weather.temp}°C</div><div className="text-[10px] sm:text-xs text-white/70 uppercase font-bold">{weather.desc}</div></div>
                             </div>
                             <div className={widgetStyle}>
                                 <Clock className="text-white/60 w-5 h-5 sm:w-6 sm:h-6"/>
+                                {/* ĐỒNG HỒ DÙNG FONT MONO */}
                                 <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-widest">{format(now, 'HH:mm')}</div>
                             </div>
                         </div>
@@ -239,7 +243,8 @@ export default function CinematicHome() {
                                     <Calendar size={14} className="text-gold"/>
                                     <span className="text-[10px] sm:text-xs font-bold text-gold uppercase tracking-wider hidden sm:block">Lịch Tuần</span>
                                 </button>
-                                <span className="text-[10px] sm:text-xs font-bold text-white/80 bg-white/10 px-2 sm:px-3 py-1.5 rounded-full backdrop-blur border border-white/10">
+                                {/* NGÀY THÁNG DÙNG FONT MONO CHO SỐ */}
+                                <span className="text-[10px] sm:text-xs font-bold text-white/80 bg-white/10 px-2 sm:px-3 py-1.5 rounded-full backdrop-blur border border-white/10 font-mono">
                                     {format(now, 'dd/MM/yyyy', {locale: vi})}
                                 </span>
                             </div>
@@ -248,37 +253,30 @@ export default function CinematicHome() {
                             <div className="space-y-2 sm:space-y-3 relative pl-4 before:absolute before:left-[27px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
     {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-xs">Không có lễ.</p> :
     schedules.map(ev => {
-        // LOGIC MỚI: Tách rõ 3 trạng thái
         const isHappening = status.type === 'happening' && status.item?.id === ev.id;
         const isUpcoming = (status.type === 'upcoming' || status.type === 'countdown') && status.item?.id === ev.id;
         const isPast = ev.start_time < format(now, 'HH:mm:ss') && !isHappening && !isUpcoming;
 
-        // CSS class động dựa theo trạng thái
         let rowClass = "flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-all border border-transparent group ";
         
         if (isHappening) {
-            // ĐANG DIỄN RA: Màu Đỏ + Nổi bật
             rowClass += "bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 shadow-lg transform scale-[1.02]";
         } else if (isUpcoming) {
-            // SẮP TỚI: Màu Vàng + Viền nhẹ (Để biết thẻ to bên trái đang nói về nó)
             rowClass += "bg-white/5 border-l-4 border-l-gold/50";
         } else if (isPast) {
-            // ĐÃ QUA: Mờ + Xám
             rowClass += "opacity-40 grayscale hover:opacity-100 hover:grayscale-0";
         } else {
-            // BÌNH THƯỜNG (Các lễ xa hơn trong ngày)
             rowClass += "hover:bg-white/10";
         }
 
         return (
             <div key={ev.id} className={rowClass}>
-                {/* GIỜ LỄ */}
+                {/* GIỜ LỄ - UPDATED FONT MONO */}
                 <div className={`w-12 sm:w-16 text-right text-base sm:text-lg text-shadow-light font-mono 
                     ${isHappening ? 'text-red-400 font-bold' : (isUpcoming ? 'text-gold font-bold' : 'text-white')}`}>
                     {ev.start_time.slice(0,5)}
                 </div>
 
-                {/* NỘI DUNG */}
                 <div className="flex-grow min-w-0">
                     <div className={`text-sm sm:text-base text-shadow-light truncate 
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
@@ -290,7 +288,6 @@ export default function CinematicHome() {
                     <div className="text-[11px] sm:text-xs text-white/60 truncate italic">{ev.priest_name}</div>
                 </div>
 
-                {/* BADGE TRẠNG THÁI */}
                 {isHappening && <span className="text-[9px] sm:text-[10px] font-bold bg-red-600 text-white px-1.5 sm:px-2 py-0.5 rounded shadow animate-pulse shrink-0">LIVE</span>}
                 {isUpcoming && <span className="text-[9px] sm:text-[10px] font-bold bg-gold/20 text-gold border border-gold/30 px-1.5 sm:px-2 py-0.5 rounded shrink-0">SẮP TỚI</span>}
             </div>
@@ -329,12 +326,14 @@ export default function CinematicHome() {
                                         <div key={date} className={`rounded-xl border p-3 sm:p-4 transition duration-300 ${isTodayDate ? 'border-gold bg-gold/10 ring-1 ring-gold/50' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>
                                             <div className="flex justify-between items-center mb-2 sm:mb-3 border-b border-white/10 pb-2">
                                                 <span className="font-serif font-bold text-lg sm:text-xl text-white capitalize">{format(parseISO(date), 'EEEE', {locale: vi})}</span>
-                                                <span className={`text-[10px] sm:text-xs font-bold border border-current px-2 py-0.5 rounded-full ${isTodayDate ? 'text-gold' : 'text-white/70'}`}>{format(parseISO(date), 'dd/MM')}</span>
+                                                {/* NGÀY THÁNG DÙNG FONT MONO */}
+                                                <span className={`text-[10px] sm:text-xs font-bold border border-current px-2 py-0.5 rounded-full font-mono ${isTodayDate ? 'text-gold' : 'text-white/70'}`}>{format(parseISO(date), 'dd/MM')}</span>
                                             </div>
                                             <div className="space-y-0.5 sm:space-y-1">
                                                 {items.length === 0 ? <p className="text-[10px] text-white/30 italic py-2 text-center">- Trống -</p> : 
                                                 items.map((ev: any) => (
                                                     <div key={ev.id} className="flex items-start gap-2 sm:gap-3 py-2 border-b border-white/5 last:border-0 group">
+                                                        {/* GIỜ LỄ DÙNG FONT MONO */}
                                                         <div className="font-mono text-white font-bold bg-white/10 px-1.5 rounded text-xs sm:text-sm whitespace-nowrap">{ev.start_time.slice(0,5)}</div>
                                                         <div className="min-w-0">
                                                             <div className="text-xs sm:text-sm font-bold text-white leading-tight truncate">{ev.title}</div>
