@@ -138,7 +138,7 @@ export default function CinematicHome() {
                 <div className="marquee-content font-medium flex items-center">
                     <span className="mr-24">🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.</span>
                     <span className="mr-24">🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.</span>
-                    <span className="mr-24">🏥 Trạm Y Tế trực 24/24 tại Cổng Số 2.</span>
+                    <span className="mr-24">✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ.</span>
                 </div>
             </div>
         </div>
