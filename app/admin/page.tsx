@@ -2,42 +2,48 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock } from 'lucide-react'
+import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock, Lock, Shield, Users, UserMinus, UserPlus, CheckCircle } from 'lucide-react'
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isBefore, startOfYear, endOfYear, eachMonthOfInterval, addYears, subYears } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
 // --- TYPES ---
-type Schedule = { id: number; date: string; start_time: string; title: string; priest_name: string; note: string; location: string }
+type Schedule = { id: number; date: string; start_time: string; title: string; priest_name: string; note: string; location: string; last_updated_by?: string }
 type LocationItem = { id: number; name: string }
+type UserProfile = { id: string; email: string; role: 'member' | 'super_admin'; created_at: string }
 type ViewMode = 'day' | 'week' | 'month' | 'year'
 
 export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [currentUser, setCurrentUser] = useState<{ email: string, role: string } | null>(null)
+  
+  // DATA STATES
   const [listSchedules, setListSchedules] = useState<Schedule[]>([])
   const [locations, setLocations] = useState<LocationItem[]>([])
+  const [members, setMembers] = useState<UserProfile[]>([])
   
-  // -- STATE VIEW --
+  // UI STATES
   const [viewMode, setViewMode] = useState<ViewMode>('day') 
   const [currentDate, setCurrentDate] = useState(new Date()) 
+  const [showMemberModal, setShowMemberModal] = useState(false)
   
-  // -- STATE POPUP --
+  // POPUP STATES
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)
   const [showLocPicker, setShowLocPicker] = useState(false)
   
-  // -- STATE FORM --
+  // FORM STATES
   const [selectedDateForInput, setSelectedDateForInput] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [form, setForm] = useState({ start_time: '05:00', title: '', priest_name: '', note: '', location: '' })
   const [editingId, setEditingId] = useState<number | null>(null)
 
-  // -- REFS --
+  // REFS
   const calRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
   const locRef = useRef<HTMLDivElement>(null)
   const mainContainerRef = useRef<HTMLDivElement>(null)
 
-  // CLICK OUTSIDE
+  // --- INIT ---
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (calRef.current && !calRef.current.contains(event.target as Node)) setShowCalendar(false)
@@ -48,53 +54,46 @@ export default function AdminPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // CHECK AUTH & LOAD DATA
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) router.push('/login')
-      else {
-          fetchDataByViewMode()
-          loadLocations()
-      }
+      if (!session) { router.push('/login'); return; }
+      
+      // Get User Role
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
+      setCurrentUser({ email: session.user.email!, role: profile?.role || 'member' })
+
+      fetchDataByViewMode()
+      loadLocations()
     }
     checkUser()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, currentDate, router]) 
 
-  // --- FETCH DATA ---
+  // --- FETCHING ---
   const fetchDataByViewMode = async () => {
       let startStr = '', endStr = '';
-      if (viewMode === 'day') { 
-          startStr = format(currentDate, 'yyyy-MM-dd'); 
-          endStr = startStr; 
-      } 
-      else if (viewMode === 'week') { 
-          startStr = format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd'); 
-          endStr = format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd'); 
-      } 
-      else if (viewMode === 'month') { 
-          startStr = format(startOfMonth(currentDate), 'yyyy-MM-dd'); 
-          endStr = format(endOfMonth(currentDate), 'yyyy-MM-dd'); 
-      } 
-      else { 
-          startStr = format(startOfYear(currentDate), 'yyyy-MM-dd'); 
-          endStr = format(endOfYear(currentDate), 'yyyy-MM-dd'); 
-      }
+      if (viewMode === 'day') { startStr = format(currentDate, 'yyyy-MM-dd'); endStr = startStr; } 
+      else if (viewMode === 'week') { startStr = format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd'); endStr = format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd'); } 
+      else if (viewMode === 'month') { startStr = format(startOfMonth(currentDate), 'yyyy-MM-dd'); endStr = format(endOfMonth(currentDate), 'yyyy-MM-dd'); } 
+      else { startStr = format(startOfYear(currentDate), 'yyyy-MM-dd'); endStr = format(endOfYear(currentDate), 'yyyy-MM-dd'); }
 
       const { data } = await supabase.from('schedules').select('*').gte('date', startStr).lte('date', endStr).order('date', { ascending: true }).order('start_time', { ascending: true }); 
       if (data) setListSchedules(data);
   }
 
   const loadLocations = async () => {
-    const { data } = await supabase.from('locations').select('*').order('name')
-    if (data) {
-        setLocations(data)
-        if (!editingId && !form.location && data.length > 0) setForm(prev => ({ ...prev, location: data[0].name }))
-    }
+    const { data } = await supabase.from('locations').select('*').order('name');
+    if (data) setLocations(data);
+    if (!editingId && !form.location && data && data.length > 0) setForm(prev => ({ ...prev, location: data[0].name }));
   }
 
-  // --- ACTIONS ---
+  const loadMembers = async () => {
+      if (currentUser?.role !== 'super_admin') return;
+      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      if (data) setMembers(data as UserProfile[]);
+  }
+
+  // --- SCHEDULE ACTIONS ---
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedDateForInput) { alert("Vui lòng chọn ngày!"); return; }
@@ -104,12 +103,15 @@ export default function AdminPage() {
     const exists = locations.find(l => l.name.toLowerCase() === form.location.toLowerCase());
     if (!exists) { await supabase.from('locations').insert([{ name: form.location }]); loadLocations(); }
 
+    // TRACKING: Lưu người sửa cuối cùng
+    const payload = { ...form, date: selectedDateForInput, last_updated_by: currentUser?.email };
+
     let error;
     if (editingId) {
-        const res = await supabase.from('schedules').update({ ...form, date: selectedDateForInput }).eq('id', editingId)
+        const res = await supabase.from('schedules').update(payload).eq('id', editingId)
         error = res.error
     } else {
-        const res = await supabase.from('schedules').insert([{ ...form, date: selectedDateForInput }])
+        const res = await supabase.from('schedules').insert([payload])
         error = res.error
     }
     setLoading(false)
@@ -120,6 +122,30 @@ export default function AdminPage() {
     } else alert("Lỗi: " + error.message)
   }
 
+  const handleDelete = async (id: number) => {
+    if(!confirm('Bạn có chắc muốn xóa lễ này không?')) return;
+    await supabase.from('schedules').delete().eq('id', id)
+    fetchDataByViewMode()
+    if (editingId === id) { setEditingId(null); setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' })); }
+  }
+
+  // --- MEMBER ACTIONS (SUPER ADMIN ONLY) ---
+  const handleDeleteMember = async (id: string) => {
+      if(!confirm('Xóa thành viên này? Họ sẽ mất quyền truy cập.')) return;
+      // Lưu ý: Ở đây ta xóa khỏi bảng profiles (để chặn quyền). Để xóa hẳn khỏi Auth cần dùng Supabase Admin API (Backend).
+      // Với giao diện này, ta xóa profile là đủ để họ thành "vô danh".
+      await supabase.from('profiles').delete().eq('id', id);
+      loadMembers();
+  }
+
+  const toggleRole = async (member: UserProfile) => {
+      const newRole = member.role === 'super_admin' ? 'member' : 'super_admin';
+      if(!confirm(`Đổi quyền của ${member.email} thành ${newRole}?`)) return;
+      await supabase.from('profiles').update({ role: newRole }).eq('id', member.id);
+      loadMembers();
+  }
+
+  // --- HELPERS ---
   const prepareAddForDate = (dateStr: string) => {
       setSelectedDateForInput(dateStr);
       setEditingId(null);
@@ -134,32 +160,14 @@ export default function AdminPage() {
       mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  const handleDelete = async (id: number) => {
-    if(!confirm('Bạn có chắc muốn xóa lễ này không?')) return;
-    await supabase.from('schedules').delete().eq('id', id)
-    fetchDataByViewMode()
-    if (editingId === id) { setEditingId(null); setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' })); }
-  }
-
-  const deleteLocation = async (id: number, e: React.MouseEvent) => {
-      e.stopPropagation();
-      if(!confirm('Xóa địa điểm này khỏi danh sách gợi ý?')) return;
-      await supabase.from('locations').delete().eq('id', id); loadLocations();
-  }
-
-  const isPastEvent = (dateStr: string, timeStr: string) => {
-      const eventDate = new Date(`${dateStr}T${timeStr}`);
-      return isBefore(eventDate, new Date());
-  };
-  
-  // --- HELPERS ---
+  const isPastEvent = (dateStr: string, timeStr: string) => isBefore(new Date(`${dateStr}T${timeStr}`), new Date());
   const displayDateInput = () => isValid(parseISO(selectedDateForInput)) ? format(parseISO(selectedDateForInput), 'dd/MM/yyyy') : '...';
   
   const navigateDate = (dir: 'prev' | 'next') => {
-      if (viewMode === 'day') setCurrentDate(dir==='next' ? addDays(currentDate, 1) : subDays(currentDate, 1));
-      else if (viewMode === 'week') setCurrentDate(dir==='next' ? addDays(currentDate, 7) : subDays(currentDate, 7));
-      else if (viewMode === 'month') setCurrentDate(dir==='next' ? addMonths(currentDate, 1) : subMonths(currentDate, 1));
-      else setCurrentDate(dir==='next' ? addYears(currentDate, 1) : subYears(currentDate, 1));
+      const func = dir === 'next' ? (viewMode === 'day' ? addDays : viewMode === 'week' ? addDays : viewMode === 'month' ? addMonths : addYears) 
+                                  : (viewMode === 'day' ? subDays : viewMode === 'week' ? subDays : viewMode === 'month' ? subMonths : subYears);
+      const amount = viewMode === 'week' ? 7 : 1;
+      setCurrentDate(func(currentDate, amount));
   }
 
   const getListTitle = () => {
@@ -183,11 +191,22 @@ export default function AdminPage() {
       <div className="sticky top-0 z-[60] bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 py-3 flex justify-between items-center shadow-lg">
             <h1 className="font-serif text-lg font-bold text-gold flex items-center gap-2">
                 <div className="bg-gold/20 p-1.5 rounded-lg"><User size={20} className="text-gold"/></div>
-                Admin Panel
+                <div className="flex flex-col">
+                    <span>Admin Panel</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Hi, {currentUser?.email} ({currentUser?.role === 'super_admin' ? 'Super Admin' : 'Member'})</span>
+                </div>
             </h1>
-            <button onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }} className="flex items-center gap-2 text-xs font-bold text-red-400 bg-red-900/20 px-4 py-2.5 rounded-xl hover:bg-red-900/30 transition active:scale-95">
-                <LogOut size={16}/> <span className="hidden sm:inline">Đăng Xuất</span>
-            </button>
+            <div className="flex items-center gap-2">
+                {/* NÚT QUẢN LÝ MEMBER (CHỈ SUPER ADMIN THẤY) */}
+                {currentUser?.role === 'super_admin' && (
+                    <button onClick={() => { setShowMemberModal(true); loadMembers(); }} className="flex items-center gap-2 text-xs font-bold text-blue-400 bg-blue-900/20 px-4 py-2.5 rounded-xl hover:bg-blue-900/30 transition active:scale-95 border border-blue-500/30">
+                        <Users size={16}/> <span className="hidden sm:inline">Thành Viên</span>
+                    </button>
+                )}
+                <button onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }} className="flex items-center gap-2 text-xs font-bold text-red-400 bg-red-900/20 px-4 py-2.5 rounded-xl hover:bg-red-900/30 transition active:scale-95">
+                    <LogOut size={16}/> <span className="hidden sm:inline">Thoát</span>
+                </button>
+            </div>
       </div>
 
       <div className="max-w-[1600px] mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -199,6 +218,7 @@ export default function AdminPage() {
                     {editingId ? <><Edit className="text-blue-400" size={24}/> Chỉnh Sửa Lễ</> : <><Plus className="text-gold" size={24}/> Thêm Lễ Mới</>}
                 </h2>
                 <form onSubmit={handleSave} className="space-y-5">
+                    {/* ... (GIỮ NGUYÊN CÁC INPUT FORM CŨ CỦA BẠN - ĐOẠN NÀY KHÔNG THAY ĐỔI) ... */}
                     {/* INPUT: NGÀY */}
                     <div className="space-y-1.5 relative" ref={calRef}>
                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Ngày diễn ra</label>
@@ -272,10 +292,17 @@ export default function AdminPage() {
                          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Linh mục (Tùy chọn)</label>
                          <input type="text" placeholder="Vd: Cha Giuse..." className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-white placeholder-white/20 focus:border-gold outline-none transition font-medium" value={form.priest_name} onChange={e => setForm({...form, priest_name: e.target.value})} />
                     </div>
-                    {/* BUTTONS */}
+
                     <div className="flex gap-3 pt-4 border-t border-white/5">
-                        {editingId && (<button type="button" onClick={() => { setEditingId(null); setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' })) }} className="w-1/3 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl transition active:scale-95">Hủy</button>)}
-                        <button disabled={loading} className={`flex-grow font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 text-base shadow-lg active:scale-95 transition ${editingId ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-gold hover:bg-yellow-400 text-slate-900'}`}>{loading ? <Loader2 className="animate-spin"/> : (editingId ? 'Lưu Thay Đổi' : 'Thêm Lịch Lễ')}</button>
+                        {editingId && (
+                            <button type="button" onClick={() => { setEditingId(null); setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' })) }} 
+                                className="w-1/3 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl transition active:scale-95">
+                                Hủy
+                            </button>
+                        )}
+                        <button disabled={loading} className={`flex-grow font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 text-base shadow-lg active:scale-95 transition ${editingId ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-gold hover:bg-yellow-400 text-slate-900'}`}>
+                            {loading ? <Loader2 className="animate-spin"/> : (editingId ? 'Lưu Thay Đổi' : 'Thêm Lịch Lễ')}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -284,6 +311,7 @@ export default function AdminPage() {
         {/* --- CỘT PHẢI: DASHBOARD --- */}
         <div className="lg:col-span-9">
              <div className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md overflow-hidden flex flex-col min-h-[600px] shadow-2xl">
+                
                 {/* TOOLBAR */}
                 <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-black/20">
                     <div className="flex items-center gap-1 bg-black/40 p-1.5 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
@@ -303,6 +331,7 @@ export default function AdminPage() {
 
                 {/* CONTENT AREA */}
                 <div className="p-4 flex-grow bg-black/20 overflow-y-auto custom-scrollbar">
+                    {/* ... (PHẦN VIEW YEAR/MONTH/WEEK GIỮ NGUYÊN) ... */}
                     {/* VIEW NĂM */}
                     {viewMode === 'year' && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -349,7 +378,7 @@ export default function AdminPage() {
                         </div>
                     )}
 
-                    {/* VIEW TUẦN (SỬA LỚN: LUÔN HIỆN NÚT KỂ CẢ LỊCH CŨ) */}
+                    {/* VIEW TUẦN */}
                     {viewMode === 'week' && (
                          <div className="space-y-6 pb-20">
                              {Array.from({length: 7}).map((_, i) => {
@@ -371,7 +400,6 @@ export default function AdminPage() {
                                             {dayEvents.map(ev => {
                                                 const isPast = isPastEvent(ev.date, ev.start_time);
                                                 return (
-                                                // Vẫn giữ giao diện tối màu (isPast) nhưng không ẩn nút
                                                 <div key={ev.id} className={`border p-4 rounded-xl flex flex-col sm:flex-row sm:items-center gap-4 transition ${isPast ? 'bg-slate-900/50 border-white/5 opacity-70' : 'bg-black/40 border-white/5 hover:border-white/20'}`}>
                                                     <div className="flex items-start sm:items-center gap-4 flex-grow">
                                                          <div className={`font-mono font-bold text-xl pt-1 sm:pt-0 ${isPast ? 'text-slate-500' : 'text-gold'}`}>{ev.start_time.slice(0,5)}</div>
@@ -381,16 +409,13 @@ export default function AdminPage() {
                                                                  <span className="flex items-center gap-1"><MapPin size={14}/> {ev.location}</span>
                                                                  {ev.priest_name && <span className="flex items-center gap-1"><User size={14}/> {ev.priest_name}</span>}
                                                              </div>
+                                                             {/* TRACKING INFO */}
+                                                             {ev.last_updated_by && <div className="text-[10px] text-slate-600 italic mt-1">Sửa bởi: {ev.last_updated_by}</div>}
                                                          </div>
                                                     </div>
-                                                    {/* Nút thao tác LUÔN HIỂN THỊ */}
                                                     <div className="flex gap-3 pt-3 mt-1 border-t border-white/10 sm:pt-0 sm:mt-0 sm:border-t-0 sm:border-l sm:pl-4 sm:border-white/10">
-                                                        <button onClick={() => startEdit(ev)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-900/20 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition font-medium text-sm active:scale-95">
-                                                            <Edit size={18}/> <span className="sm:hidden">Sửa</span>
-                                                        </button>
-                                                        <button onClick={() => handleDelete(ev.id)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-900/20 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition font-medium text-sm active:scale-95">
-                                                            <Trash2 size={18}/> <span className="sm:hidden">Xóa</span>
-                                                        </button>
+                                                        <button onClick={() => startEdit(ev)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-900/20 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition font-medium text-sm active:scale-95"><Edit size={18}/> <span className="sm:hidden">Sửa</span></button>
+                                                        <button onClick={() => handleDelete(ev.id)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-900/20 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition font-medium text-sm active:scale-95"><Trash2 size={18}/> <span className="sm:hidden">Xóa</span></button>
                                                     </div>
                                                 </div>
                                             )})}
@@ -401,7 +426,7 @@ export default function AdminPage() {
                          </div>
                     )}
 
-                    {/* VIEW NGÀY (SỬA LỚN: LUÔN HIỆN NÚT KỂ CẢ LỊCH CŨ) */}
+                    {/* VIEW NGÀY */}
                     {viewMode === 'day' && (
                         <div className="space-y-4 pb-20">
                             {listSchedules.length === 0 ? (
@@ -414,7 +439,6 @@ export default function AdminPage() {
                                 listSchedules.map(item => {
                                     const isPast = isPastEvent(item.date, item.start_time);
                                     return (
-                                    // Vẫn giữ giao diện tối màu (isPast) nhưng không ẩn nút
                                     <div key={item.id} className={`flex flex-col sm:flex-row gap-4 p-5 rounded-2xl border transition ${isPast ? 'bg-slate-900/50 border-slate-800 opacity-60' : 'bg-black/40 border-white/10'}`}>
                                         <div className="flex items-start gap-4 flex-grow">
                                             <div className={`font-mono font-bold text-2xl pt-1 sm:pt-0 ${isPast ? 'text-slate-500' : 'text-gold'}`}>{item.start_time.slice(0,5)}</div>
@@ -424,16 +448,13 @@ export default function AdminPage() {
                                                     <span className="flex items-center gap-1"><MapPin size={16}/> {item.location}</span>
                                                     {item.priest_name && <span className="flex items-center gap-1"><User size={16}/> {item.priest_name}</span>}
                                                 </div>
+                                                {/* TRACKING INFO */}
+                                                {item.last_updated_by && <div className="text-[10px] text-slate-600 italic mt-2 border-t border-white/5 pt-1">Cập nhật cuối: {item.last_updated_by}</div>}
                                             </div>
                                         </div>
-                                        {/* Nút thao tác LUÔN HIỂN THỊ */}
                                         <div className="flex sm:flex-col gap-3 pt-3 border-t border-white/5 sm:border-t-0 sm:pt-0 sm:pl-4 sm:border-l sm:border-white/10">
-                                            <button onClick={() => startEdit(item)} className="flex-1 sm:flex-none p-3 bg-blue-900/20 text-blue-400 rounded-xl hover:bg-blue-600 hover:text-white transition flex justify-center items-center active:scale-95">
-                                                <Edit size={20}/> <span className="ml-2 font-bold sm:hidden">Sửa</span>
-                                            </button>
-                                            <button onClick={() => handleDelete(item.id)} className="flex-1 sm:flex-none p-3 bg-red-900/20 text-red-400 rounded-xl hover:bg-red-600 hover:text-white transition flex justify-center items-center active:scale-95">
-                                                <Trash2 size={20}/> <span className="ml-2 font-bold sm:hidden">Xóa</span>
-                                            </button>
+                                            <button onClick={() => startEdit(item)} className="flex-1 sm:flex-none p-3 bg-blue-900/20 text-blue-400 rounded-xl hover:bg-blue-600 hover:text-white transition flex justify-center items-center active:scale-95"><Edit size={20}/> <span className="ml-2 font-bold sm:hidden">Sửa</span></button>
+                                            <button onClick={() => handleDelete(item.id)} className="flex-1 sm:flex-none p-3 bg-red-900/20 text-red-400 rounded-xl hover:bg-red-600 hover:text-white transition flex justify-center items-center active:scale-95"><Trash2 size={20}/> <span className="ml-2 font-bold sm:hidden">Xóa</span></button>
                                         </div>
                                     </div>
                                 )})
@@ -444,6 +465,41 @@ export default function AdminPage() {
              </div>
         </div>
       </div>
+
+      {/* MEMBER MANAGEMENT MODAL (CHỈ HIỆN VỚI SUPER ADMIN) */}
+      {showMemberModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-[#1a1a24] border border-white/20 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-fade-in">
+                  <div className="p-5 border-b border-white/10 flex justify-between items-center bg-white/5 rounded-t-2xl">
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2"><Shield className="text-blue-400"/> Quản lý thành viên</h2>
+                      <button onClick={() => setShowMemberModal(false)} className="p-2 hover:bg-white/10 rounded-full"><X/></button>
+                  </div>
+                  <div className="overflow-y-auto p-5 custom-scrollbar space-y-3">
+                      {members.map(mem => (
+                          <div key={mem.id} className="flex items-center justify-between p-4 bg-black/40 border border-white/10 rounded-xl">
+                              <div>
+                                  <div className="font-bold text-white">{mem.email}</div>
+                                  <div className="text-xs text-slate-500">Tham gia: {format(parseISO(mem.created_at), 'dd/MM/yyyy')}</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                  {mem.role === 'super_admin' ? 
+                                      <span className="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded border border-blue-500/30">Super Admin</span> 
+                                      : <span className="text-[10px] font-bold bg-white/10 text-slate-400 px-2 py-1 rounded">Member</span>
+                                  }
+                                  {/* Không cho tự xóa hoặc đổi quyền chính mình */}
+                                  {mem.email !== currentUser?.email && (
+                                      <>
+                                          <button onClick={() => toggleRole(mem)} title="Đổi quyền" className="p-2 bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 rounded-lg transition"><UserPlus size={18}/></button>
+                                          <button onClick={() => handleDeleteMember(mem.id)} title="Xóa thành viên" className="p-2 bg-white/5 hover:bg-red-600/20 text-slate-400 hover:text-red-400 rounded-lg transition"><UserMinus size={18}/></button>
+                                      </>
+                                  )}
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   )
 }
