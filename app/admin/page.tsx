@@ -60,28 +60,28 @@ export default function AdminPage() {
       // 1. Lấy Session
       const { data: { session }, error: authError } = await supabase.auth.getSession()
       if (authError || !session) { 
-          console.error("Lỗi Auth:", authError);
           router.push('/login'); 
           return; 
       }
       
       // 2. Lấy Role từ bảng profiles
-      console.log("Đang lấy role cho ID:", session.user.id);
       const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
 
-      if (profileError) {
-          console.error("Lỗi không lấy được Profile (Do RLS hoặc chưa có dữ liệu):", profileError);
-          // Nếu lỗi, tạm thời vẫn cho vào nhưng là member (để không bị văng ra)
-          setCurrentUser({ email: session.user.email!, role: 'member' });
-      } else {
-          console.log("Profile lấy được:", profile);
-          setCurrentUser({ email: session.user.email!, role: profile?.role || 'member' });
+      // --- LOGIC MỚI: NẾU KHÔNG CÓ PROFILE -> ĐÁ RA NGOÀI ---
+      if (profileError || !profile) {
+          console.error("User đã bị xóa quyền hoặc không tồn tại profile.");
+          alert("Tài khoản của bạn đã bị khóa hoặc xóa quyền truy cập.");
+          await supabase.auth.signOut(); // Đăng xuất ngay lập tức
+          router.push('/login');
+          return;
       }
+      // -------------------------------------------------------
 
+      setCurrentUser({ email: session.user.email!, role: profile.role });
       fetchDataByViewMode()
       loadLocations()
     }
