@@ -228,7 +228,7 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 2. COUNTDOWN */}
+                        {/* 2. COUNTDOWN (ĐÃ GIẢM SIZE 50%) */}
                         {status.type === 'countdown' && status.item && (
                             <div className={`${cardStyle} border-gold/30`}>
                                 <div className="bg-gold text-marian-dark font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded inline-block mb-2 sm:mb-3 uppercase tracking-widest shadow-lg">Sắp diễn ra</div>
@@ -239,7 +239,8 @@ export default function CinematicHome() {
                                 </div>
                                 <div className="bg-black/30 rounded-xl p-3 sm:p-4 border border-white/10 mb-1 inline-block w-full text-center lg:text-left">
                                     <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">Thời gian còn lại</div>
-                                    <div className="font-mono text-6xl sm:text-7xl lg:text-9xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
+                                    {/* UPDATED: SIZE CHỮ ĐÃ GIẢM KHOẢNG 50% (từ 9xl xuống 6xl) */}
+                                    <div className="font-mono text-4xl sm:text-5xl lg:text-6xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
                                         {status.diffString}
                                     </div>
                                 </div>
@@ -295,7 +296,7 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN - ĐÃ CHỈNH SỬA CHO TO VÀ THOÁNG HƠN */}
+                {/* RIGHT COLUMN */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
                     <div className="glass-panel rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[400px] lg:h-full">
                         <div className="p-4 sm:p-6 border-b border-white/10 bg-white/5 flex justify-between items-center flex-none">
@@ -310,16 +311,13 @@ export default function CinematicHome() {
                                 </span>
                             </div>
                         </div>
-                        {/* CẬP NHẬT GIAO DIỆN DANH SÁCH LỄ TO HƠN */}
                         <div className="overflow-y-auto flex-grow p-4 sm:p-6 custom-scrollbar">
                             <div className="space-y-4 sm:space-y-6 relative pl-8 before:absolute before:left-[35px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
     {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-base">Không có lễ hôm nay.</p> :
     schedules.map(ev => {
-        // --- LOGIC TRẠNG THÁI DANH SÁCH BÊN PHẢI ---
         const timeStr = format(now, 'HH:mm:ss');
         const [h, m] = ev.start_time.split(':').map(Number);
         
-        // Tính End Time = Start + 30p
         const endDate = new Date(now);
         endDate.setHours(h, m + MASS_DURATION_MINUTES, 0, 0);
         const endStr = format(endDate, 'HH:mm:ss');
@@ -338,25 +336,22 @@ export default function CinematicHome() {
             } else {
                  rowClass += "hover:bg-white/10";
             }
-        } else { // isPast
+        } else {
             rowClass += "opacity-40 grayscale hover:opacity-100 hover:grayscale-0";
         }
 
         return (
             <div key={ev.id} className={rowClass}>
-                {/* GIỜ LỄ - TĂNG SIZE CHỮ TO HƠN */}
                 <div className={`w-24 text-right text-3xl sm:text-4xl text-shadow-light font-mono tracking-tight 
                     ${isHappening ? 'text-red-400 font-bold' : (isUpcoming ? 'text-gold font-bold' : 'text-white')}`}>
                     {ev.start_time.slice(0,5)}
                 </div>
 
                 <div className="flex-grow min-w-0 pl-2">
-                    {/* TÊN LỄ - TĂNG SIZE CHỮ */}
                     <div className={`text-xl sm:text-2xl text-shadow-light truncate font-serif
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
                         {ev.title}
                     </div>
-                    {/* ĐỊA ĐIỂM - TĂNG SIZE CHỮ */}
                     <div className="flex items-center gap-2 text-sm sm:text-base text-white/70 uppercase font-bold tracking-wider mt-1 truncate">
                         <MapPin size={14}/> {ev.location}
                     </div>
@@ -401,14 +396,12 @@ export default function CinematicHome() {
                                         <div key={date} className={`rounded-xl border p-3 sm:p-4 transition duration-300 ${isTodayDate ? 'border-gold bg-gold/10 ring-1 ring-gold/50' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>
                                             <div className="flex justify-between items-center mb-2 sm:mb-3 border-b border-white/10 pb-2">
                                                 <span className="font-serif font-bold text-lg sm:text-xl text-white capitalize">{format(parseISO(date), 'EEEE', {locale: vi})}</span>
-                                                {/* NGÀY THÁNG - FONT MONO */}
                                                 <span className={`text-[10px] sm:text-xs font-bold border border-current px-2 py-0.5 rounded-full font-mono ${isTodayDate ? 'text-gold' : 'text-white/70'}`}>{format(parseISO(date), 'dd/MM')}</span>
                                             </div>
                                             <div className="space-y-0.5 sm:space-y-1">
                                                 {items.length === 0 ? <p className="text-[10px] text-white/30 italic py-2 text-center">- Trống -</p> : 
                                                 items.map((ev: any) => (
                                                     <div key={ev.id} className="flex items-start gap-2 sm:gap-3 py-2 border-b border-white/5 last:border-0 group">
-                                                        {/* GIỜ LỄ - FONT MONO */}
                                                         <div className="font-mono text-white font-bold bg-white/10 px-1.5 rounded text-xs sm:text-sm whitespace-nowrap">{ev.start_time.slice(0,5)}</div>
                                                         <div className="min-w-0">
                                                             <div className="text-xs sm:text-sm font-bold text-white leading-tight truncate">{ev.title}</div>
