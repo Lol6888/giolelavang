@@ -161,6 +161,13 @@ export default function CinematicHome() {
   
   const status = getStatus();
 
+  // --- NEW LOGIC: BACKGROUND FILTER ---
+  const getBgFilter = () => {
+      if (weather.code >= 51) return 'none'; // Mưa: Giữ nguyên màu gốc
+      if (weather.code <= 3) return 'brightness(1.05) saturate(1.1)'; // Nắng: Tăng sáng và rực màu
+      return 'brightness(1.1) saturate(1.2)'; // Mây: Sáng và rực rỡ hơn
+  }
+
   // CSS CLASSES
   const widgetContainerStyle = "flex gap-3 sm:gap-4 mt-2 w-full max-w-xl mx-auto lg:mx-0"; 
   const widgetStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center";
@@ -168,8 +175,11 @@ export default function CinematicHome() {
 
   return (
     <div className="relative h-screen font-sans text-slate-100 overflow-hidden flex flex-col">
-        {/* BACKGROUND */}
-        <div className={`absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000 ${weather.code >= 51 ? 'filter grayscale brightness-75' : ''}`}></div>
+        {/* BACKGROUND - UPDATED FILTER LOGIC */}
+        <div 
+            className="absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000"
+            style={{ filter: getBgFilter() }}
+        ></div>
         <div className="absolute inset-0 bg-black/40 z-0"></div>
         <canvas ref={canvasRef} className="absolute inset-0 z-1 pointer-events-none"></canvas>
         
