@@ -2,8 +2,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { createNewMember } from './actions' // <--- IMPORT QUAN TRỌNG: GỌI HÀM TỪ SERVER
-import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock, Lock, Shield, Users, UserMinus, UserPlus, AlertCircle } from 'lucide-react'
+import { createNewMember } from './actions' // <--- IMPORT QUAN TRỌNG
+import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock, Lock, Shield, Users, UserMinus, UserPlus, AlertCircle, CheckCircle } from 'lucide-react'
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isBefore, startOfYear, endOfYear, eachMonthOfInterval, addYears, subYears } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
@@ -111,7 +111,7 @@ export default function AdminPage() {
 
   const loadMembers = async () => {
       if (currentUser?.role !== 'super_admin') return;
-      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (data) setMembers(data as UserProfile[]);
   }
 
@@ -172,27 +172,32 @@ export default function AdminPage() {
       await supabase.from('locations').delete().eq('id', id); loadLocations();
   }
 
-  // --- HANDLE ADD USER (REAL FUNCTION) ---
+  // --- HANDLE ADD USER (CHÍNH THỨC) ---
   const handleAddUser = async (e: React.FormEvent) => {
       e.preventDefault();
-      setIsCreatingUser(true); // Bật trạng thái loading
+      setIsCreatingUser(true); // Bật loading
 
-      // Gọi Server Action (Chạy ngầm ở server)
-      const formData = new FormData();
-      formData.append('email', newUser.email);
-      formData.append('password', newUser.password);
+      try {
+          // Gọi Server Action
+          const formData = new FormData();
+          formData.append('email', newUser.email);
+          formData.append('password', newUser.password);
 
-      const result = await createNewMember(formData);
+          const result = await createNewMember(formData);
 
-      setIsCreatingUser(false); // Tắt loading
-
-      if (result.error) {
-          alert(`❌ Thất bại: ${result.error}`);
-      } else {
-          alert(`✅ ${result.message}`);
-          setNewUser({ email: '', password: '' });
-          setShowAddUserForm(false);
-          loadMembers(); // Reload danh sách ngay
+          if (result.error) {
+              alert(`❌ Thất bại: ${result.error}`);
+          } else {
+              alert(`✅ ${result.message}`);
+              setNewUser({ email: '', password: '' });
+              setShowAddUserForm(false);
+              loadMembers(); // Reload danh sách ngay
+          }
+      } catch (error) {
+          console.error(error);
+          alert("❌ Lỗi kết nối đến server.");
+      } finally {
+          setIsCreatingUser(false); // Tắt loading
       }
   }
 
@@ -378,7 +383,7 @@ export default function AdminPage() {
 
                 {/* CONTENT AREA */}
                 <div className="p-4 flex-grow bg-black/20 overflow-y-auto custom-scrollbar">
-                    {/* VIEW NĂM */}
+                    {/* ... VIEW LOGIC ... */}
                     {viewMode === 'year' && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                             {eachMonthOfInterval({ start: startOfYear(currentDate), end: endOfYear(currentDate) }).map(month => {
@@ -394,7 +399,6 @@ export default function AdminPage() {
                             })}
                         </div>
                     )}
-                    {/* VIEW THÁNG */}
                     {viewMode === 'month' && (
                         <div className="h-full flex flex-col">
                              <div className="grid grid-cols-7 gap-1 mb-2">
@@ -422,7 +426,6 @@ export default function AdminPage() {
                              </div>
                         </div>
                     )}
-                    {/* VIEW TUẦN */}
                     {viewMode === 'week' && (
                          <div className="space-y-6 pb-20">
                              {Array.from({length: 7}).map((_, i) => {
@@ -468,7 +471,6 @@ export default function AdminPage() {
                              })}
                          </div>
                     )}
-                    {/* VIEW NGÀY */}
                     {viewMode === 'day' && (
                         <div className="space-y-4 pb-20">
                             {listSchedules.length === 0 ? (
@@ -532,7 +534,7 @@ export default function AdminPage() {
                                   <AlertCircle className="text-blue-400 shrink-0 mt-0.5" size={20}/>
                                   <div className="text-sm text-blue-200">
                                       <p className="font-bold mb-1">Lưu ý quan trọng:</p>
-                                      <p className="opacity-80">Tính năng này sẽ tạo tài khoản đăng nhập trực tiếp (không cần xác thực email). Hãy đảm bảo email chính xác.</p>
+                                      <p className="opacity-80">Tính năng này sẽ tạo tài khoản đăng nhập trực tiếp. Hãy đảm bảo email chính xác.</p>
                                   </div>
                               </div>
                               <form onSubmit={handleAddUser} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -571,7 +573,7 @@ export default function AdminPage() {
                                           : <div className="px-3 py-1.5 rounded-lg bg-slate-700/50 text-slate-400 border border-white/5 text-xs font-bold whitespace-nowrap">Đang là Member</div>
                                       }
 
-                                      {/* CÁC NÚT THAO TÁC */}
+                                      {/* CÁC NÚT THAO TÁC RÕ RÀNG (KHÔNG DÙNG ICON KHÓ HIỂU) */}
                                       {mem.email !== currentUser?.email && (
                                           <>
                                               <div className="w-px h-8 bg-white/10 mx-2"></div>
