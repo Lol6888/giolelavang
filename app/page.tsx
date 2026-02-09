@@ -13,7 +13,6 @@ type Schedule = {
 export default function CinematicHome() {
   const [schedules, setSchedules] = useState<Schedule[]>([]) 
   const [weekSchedules, setWeekSchedules] = useState<Schedule[]>([]) 
-  // State mới để lưu lễ ngày mai (phòng khi hết lễ hôm nay)
   const [nextDaySchedule, setNextDaySchedule] = useState<Schedule | null>(null)
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState({ temp: 28, code: 0, desc: 'Đang tải...' })
@@ -30,7 +29,6 @@ export default function CinematicHome() {
   const COUNTDOWN_THRESHOLD_MINUTES = 15; // Bắt đầu đếm ngược khi còn: 15 phút
 
   // --- LOGIC ---
-  // Timer chạy mỗi giây để update đồng hồ và logic đếm ngược
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t) }, [])
 
   useEffect(() => {
@@ -106,13 +104,11 @@ export default function CinematicHome() {
   }, [weather.code])
 
   // --- HELPER: FORMAT COUNTDOWN (MM:SS) ---
-  // Hàm này tính toán số phút và giây còn lại
   const getCountdownString = (targetTimeStr: string) => {
       const [h, m] = targetTimeStr.split(':').map(Number);
       const target = new Date(now);
       target.setHours(h, m, 0, 0);
       
-      // Tính sai biệt bằng giây
       let diffSec = differenceInSeconds(target, now);
       if (diffSec < 0) return "00:00"; 
 
@@ -128,45 +124,38 @@ export default function CinematicHome() {
   const getStatus = () => {
     const timeStr = format(now, 'HH:mm:ss');
     
-    // 1. Tìm lễ đang diễn ra (Start <= Now < Start + 30p)
+    // 1. Tìm lễ đang diễn ra
     const current = schedules.find(s => {
         const [h, m] = s.start_time.split(':').map(Number);
-        // Tính thời điểm kết thúc (Start + 30p)
         const endDate = new Date(now);
         endDate.setHours(h, m + MASS_DURATION_MINUTES, 0, 0);
         const endStr = format(endDate, 'HH:mm:ss');
-        
         return timeStr >= s.start_time && timeStr < endStr;
     });
 
     if(current) return { type: 'happening', item: current };
 
-    // 2. Tìm lễ sắp tới trong ngày hôm nay (Start > Now)
+    // 2. Tìm lễ sắp tới
     const next = schedules.find(s => s.start_time > timeStr);
-    
     if(next) {
-        // Tính khoảng cách thời gian (phút) để quyết định hiển thị
         const [h, m] = next.start_time.split(':').map(Number);
         const target = new Date(now);
         target.setHours(h, m, 0, 0);
         const diffMinutes = (target.getTime() - now.getTime()) / 60000;
 
-        // Nếu còn <= 15 phút -> Chuyển sang chế độ Đếm ngược (Countdown)
         if (diffMinutes <= COUNTDOWN_THRESHOLD_MINUTES) {
             return { type: 'countdown', item: next, diffString: getCountdownString(next.start_time) };
-        } 
-        // Nếu còn > 15 phút -> Chế độ Chờ (Upcoming - Sẵn sàng)
-        else {
+        } else {
             return { type: 'upcoming', item: next, isTomorrow: false };
         }
     }
     
-    // 3. Hết lễ hôm nay -> Hiển thị lễ đầu tiên của ngày mai
+    // 3. Hết lễ hôm nay -> Hiển thị lễ ngày mai
     if (nextDaySchedule) {
         return { type: 'upcoming', item: nextDaySchedule, isTomorrow: true };
     }
 
-    // 4. Trường hợp hiếm: Không có lễ nào (cả hôm nay và ngày mai chưa có lịch)
+    // 4. Không có lễ
     return { type: 'finished' };
   }
   
@@ -220,7 +209,7 @@ export default function CinematicHome() {
                 <div className="lg:col-span-7 h-auto lg:h-full relative flex flex-col justify-end transition-all duration-500 order-1 lg:pl-4 lg:pb-12">
                      <div className="h-full flex flex-col justify-end items-start gap-2">
                         
-                        {/* 1. HAPPENING (ĐANG DIỄN RA) */}
+                        {/* 1. HAPPENING */}
                         {status.type === 'happening' && status.item && (
                             <div className={`${cardStyle} border-red-500/30`}>
                                 <div className="flex items-center gap-2 sm:gap-3 mb-2"><span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span><span className="relative inline-flex rounded-full h-full w-full bg-red-600"></span></span><span className="text-red-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Đang diễn ra</span></div>
@@ -232,7 +221,6 @@ export default function CinematicHome() {
                                 <div className="flex items-center gap-2 text-white/80 font-serif italic text-base sm:text-lg border-b border-white/10 pb-3 sm:pb-4 mb-0">
                                     <User size={18}/> <span className="truncate">Chủ tế: {status.item.priest_name}</span>
                                 </div>
-                                {/* THAY NÚT XEM TRỰC TIẾP BẰNG TEXT TRẠNG THÁI */}
                                 <div className="mt-4 flex items-center gap-3 text-red-400 font-bold uppercase tracking-widest animate-pulse">
                                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                                     Thánh lễ đang cử hành
@@ -240,7 +228,7 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 2. COUNTDOWN (CÒN <= 15 PHÚT) */}
+                        {/* 2. COUNTDOWN */}
                         {status.type === 'countdown' && status.item && (
                             <div className={`${cardStyle} border-gold/30`}>
                                 <div className="bg-gold text-marian-dark font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded inline-block mb-2 sm:mb-3 uppercase tracking-widest shadow-lg">Sắp diễn ra</div>
@@ -251,7 +239,6 @@ export default function CinematicHome() {
                                 </div>
                                 <div className="bg-black/30 rounded-xl p-3 sm:p-4 border border-white/10 mb-1 inline-block w-full text-center lg:text-left">
                                     <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">Thời gian còn lại</div>
-                                    {/* ĐỒNG HỒ ĐẾM NGƯỢC (MM:SS) - SỐ TO, FONT MONO */}
                                     <div className="font-mono text-6xl sm:text-7xl lg:text-9xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
                                         {status.diffString}
                                     </div>
@@ -259,11 +246,10 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 3. UPCOMING (CÒN > 15 PHÚT HOẶC LỄ NGÀY MAI) */}
+                        {/* 3. UPCOMING */}
                         {status.type === 'upcoming' && status.item && (
                             <div className={cardStyle}>
                                 <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                                    {/* Chỉ báo khác biệt nếu là ngày mai */}
                                     <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${status.isTomorrow ? 'bg-blue-400 shadow-[0_0_10px_#60a5fa]' : 'bg-green-400 shadow-[0_0_10px_#4ade80]'}`}></div>
                                     <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest ${status.isTomorrow ? 'text-blue-300' : 'text-green-300'}`}>
                                         {status.isTomorrow ? 'Lễ ngày mai' : 'Sẵn sàng'}
@@ -278,7 +264,6 @@ export default function CinematicHome() {
                                         <div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div>
                                         <div className="text-xl sm:text-2xl font-bold text-white font-mono">
                                             {status.item.start_time.slice(0,5)}
-                                            {/* Chú thích ngày mai */}
                                             {status.isTomorrow && <span className="text-xs text-white/50 ml-1 align-top font-sans font-medium">(Ngày mai)</span>}
                                         </div>
                                     </div>
@@ -288,7 +273,7 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 4. FINISHED (TRƯỜNG HỢP HIẾM: KO CÓ LỊCH NGÀY MAI) */}
+                        {/* 4. FINISHED */}
                         {status.type === 'finished' && (
                             <div className={cardStyle}>
                                 <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 text-shadow">Lạy Mẹ La Vang</h1>
@@ -300,19 +285,17 @@ export default function CinematicHome() {
                         <div className={widgetContainerStyle}>
                             <div className={widgetStyle}>
                                 {weather.code >= 51 ? <CloudRain className="text-blue-400 w-6 h-6 sm:w-8 sm:h-8"/> : <Sun className="text-yellow-400 w-6 h-6 sm:w-8 sm:h-8"/>}
-                                {/* NHIỆT ĐỘ - FONT MONO */}
                                 <div><div className="text-xl sm:text-2xl font-bold text-white font-mono">{weather.temp}°C</div><div className="text-[10px] sm:text-xs text-white/70 uppercase font-bold">{weather.desc}</div></div>
                             </div>
                             <div className={widgetStyle}>
                                 <Clock className="text-white/60 w-5 h-5 sm:w-6 sm:h-6"/>
-                                {/* ĐỒNG HỒ - FONT MONO */}
                                 <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-widest">{format(now, 'HH:mm')}</div>
                             </div>
                         </div>
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN */}
+                {/* RIGHT COLUMN - ĐÃ CHỈNH SỬA CHO TO VÀ THOÁNG HƠN */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
                     <div className="glass-panel rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[400px] lg:h-full">
                         <div className="p-4 sm:p-6 border-b border-white/10 bg-white/5 flex justify-between items-center flex-none">
@@ -322,15 +305,15 @@ export default function CinematicHome() {
                                     <Calendar size={14} className="text-gold"/>
                                     <span className="text-[10px] sm:text-xs font-bold text-gold uppercase tracking-wider hidden sm:block">Lịch Tuần</span>
                                 </button>
-                                {/* NGÀY THÁNG - FONT MONO */}
                                 <span className="text-[10px] sm:text-xs font-bold text-white/80 bg-white/10 px-2 sm:px-3 py-1.5 rounded-full backdrop-blur border border-white/10 font-mono">
                                     {format(now, 'dd/MM/yyyy', {locale: vi})}
                                 </span>
                             </div>
                         </div>
-                        <div className="overflow-y-auto flex-grow p-3 sm:p-4 custom-scrollbar">
-                            <div className="space-y-2 sm:space-y-3 relative pl-4 before:absolute before:left-[27px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
-    {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-xs">Không có lễ hôm nay.</p> :
+                        {/* CẬP NHẬT GIAO DIỆN DANH SÁCH LỄ TO HƠN */}
+                        <div className="overflow-y-auto flex-grow p-4 sm:p-6 custom-scrollbar">
+                            <div className="space-y-4 sm:space-y-6 relative pl-8 before:absolute before:left-[35px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
+    {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-base">Không có lễ hôm nay.</p> :
     schedules.map(ev => {
         // --- LOGIC TRẠNG THÁI DANH SÁCH BÊN PHẢI ---
         const timeStr = format(now, 'HH:mm:ss');
@@ -342,17 +325,14 @@ export default function CinematicHome() {
         const endStr = format(endDate, 'HH:mm:ss');
 
         const isHappening = timeStr >= ev.start_time && timeStr < endStr;
-        
-        // Sắp tới: Chưa diễn ra VÀ là sự kiện tiếp theo (logic đơn giản hơn cho list: cứ chưa đến giờ là sắp tới)
         const isUpcoming = timeStr < ev.start_time;
         const isPast = timeStr >= endStr;
 
-        let rowClass = "flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-all border border-transparent group ";
+        let rowClass = "flex items-center gap-4 sm:gap-6 py-6 px-6 rounded-2xl transition-all border border-transparent group ";
         
         if (isHappening) {
-            rowClass += "bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 shadow-lg transform scale-[1.02]";
+            rowClass += "bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 shadow-xl transform scale-[1.03]";
         } else if (isUpcoming) {
-            // Nếu là lễ kế tiếp được highlight bên trái -> Vàng, còn lại -> bt
             if (status.type !== 'finished' && status.item?.id === ev.id) {
                  rowClass += "bg-white/5 border-l-4 border-l-gold/50";
             } else {
@@ -364,25 +344,27 @@ export default function CinematicHome() {
 
         return (
             <div key={ev.id} className={rowClass}>
-                <div className={`w-12 sm:w-16 text-right text-base sm:text-lg text-shadow-light font-mono 
+                {/* GIỜ LỄ - TĂNG SIZE CHỮ TO HƠN */}
+                <div className={`w-24 text-right text-3xl sm:text-4xl text-shadow-light font-mono tracking-tight 
                     ${isHappening ? 'text-red-400 font-bold' : (isUpcoming ? 'text-gold font-bold' : 'text-white')}`}>
                     {ev.start_time.slice(0,5)}
                 </div>
 
-                <div className="flex-grow min-w-0">
-                    <div className={`text-sm sm:text-base text-shadow-light truncate 
+                <div className="flex-grow min-w-0 pl-2">
+                    {/* TÊN LỄ - TĂNG SIZE CHỮ */}
+                    <div className={`text-xl sm:text-2xl text-shadow-light truncate font-serif
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
                         {ev.title}
                     </div>
-                    <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-white/70 uppercase font-bold tracking-wider my-0.5 truncate">
-                        <MapPin size={10}/> {ev.location}
+                    {/* ĐỊA ĐIỂM - TĂNG SIZE CHỮ */}
+                    <div className="flex items-center gap-2 text-sm sm:text-base text-white/70 uppercase font-bold tracking-wider mt-1 truncate">
+                        <MapPin size={14}/> {ev.location}
                     </div>
-                    <div className="text-[11px] sm:text-xs text-white/60 truncate italic">{ev.priest_name}</div>
+                    <div className="text-xs sm:text-sm text-white/60 truncate italic mt-0.5">{ev.priest_name}</div>
                 </div>
 
-                {isHappening && <span className="text-[9px] sm:text-[10px] font-bold bg-red-600 text-white px-1.5 sm:px-2 py-0.5 rounded shadow animate-pulse shrink-0">LIVE</span>}
-                {/* Chỉ hiện badge Sắp tới cho đúng cái đang highlight */}
-                {isUpcoming && status.item?.id === ev.id && <span className="text-[9px] sm:text-[10px] font-bold bg-gold/20 text-gold border border-gold/30 px-1.5 sm:px-2 py-0.5 rounded shrink-0">SẮP TỚI</span>}
+                {isHappening && <span className="text-[10px] sm:text-xs font-bold bg-red-600 text-white px-2 py-1 rounded shadow animate-pulse shrink-0">LIVE</span>}
+                {isUpcoming && status.item?.id === ev.id && <span className="text-[10px] sm:text-xs font-bold bg-gold/20 text-gold border border-gold/30 px-2 py-1 rounded shrink-0">SẮP TỚI</span>}
             </div>
         )
     })}
