@@ -186,15 +186,29 @@ export default function CinematicHome() {
 
         {/* MARQUEE */}
         <div className="sticky top-0 z-[60] bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm py-2 px-4 border-b border-white/10 shrink-0">
-             <div className="marquee-container w-full">
-                <div className="marquee-content font-medium flex items-center">
-                    <span className="mr-24">🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.</span>
-                    <span className="mr-24">🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.</span>
-                    <span className="mr-24">✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ.</span>
-                    <span className="mr-24">🔔 Đăng ký giờ Lễ: Văn phòng Trung Tâm (0329 981 798)</span>
-                    <span className="mr-24">🔔 Đăng ký Lưu trú: Nhà Hành Hương (0344 151 508)</span>
-                    <span className="mr-24">🔔 Đăng ký Ẩm Thực: Nhà khách Lâm Bích (0394 430 664)</span>
+             {/* Thêm class marquee-container từ globals.css */}
+             <div className="marquee-container w-full group">
+                
+                {/* KHỐI 1: Nội dung gốc */}
+                <div className="marquee-track flex items-center">
+                    <span className="mx-8">🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.</span>
+                    <span className="mx-8">🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.</span>
+                    <span className="mx-8">✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ.</span>
+                    <span className="mx-8">🔔 Đăng ký giờ Lễ: Văn phòng Trung Tâm (0329 981 798)</span>
+                    <span className="mx-8">🔔 Đăng ký Lưu trú: Nhà Hành Hương (0344 151 508)</span>
+                    <span className="mx-8">🔔 Đăng ký Ẩm Thực: Nhà khách Lâm Bích (0394 430 664)</span>
                 </div>
+
+                {/* KHỐI 2: Nhân bản nội dung y hệt (để nối đuôi liền mạch) */}
+                <div className="marquee-track flex items-center" aria-hidden="true">
+                    <span className="mx-8">🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.</span>
+                    <span className="mx-8">🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.</span>
+                    <span className="mx-8">✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ.</span>
+                    <span className="mx-8">🔔 Đăng ký giờ Lễ: Văn phòng Trung Tâm (0329 981 798)</span>
+                    <span className="mx-8">🔔 Đăng ký Lưu trú: Nhà Hành Hương (0344 151 508)</span>
+                    <span className="mx-8">🔔 Đăng ký Ẩm Thực: Nhà khách Lâm Bích (0394 430 664)</span>
+                </div>
+
             </div>
         </div>
 
