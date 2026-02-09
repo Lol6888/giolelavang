@@ -139,6 +139,9 @@ export default function CinematicHome() {
                     <span className="mr-24">🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.</span>
                     <span className="mr-24">🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.</span>
                     <span className="mr-24">✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ.</span>
+                    <span className="mr-24">🔔 Đăng ký giờ Lễ: Văn phòng Trung Tâm (0329 981 798)</span>
+                    <span className="mr-24">🔔 Đăng ký Lưu trú: Nhà Hành Hương (0344 151 508)</span>
+                    <span className="mr-24">🔔 Đăng ký Ẩm Thực: Nhà khách Lâm Bích (0394 430 664)</span>
                 </div>
             </div>
         </div>
