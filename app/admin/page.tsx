@@ -313,8 +313,15 @@ export default function AdminPage() {
                              </div>
                              {showTimePicker && (
                                 <div className="absolute top-full left-0 mt-2 w-[280px] bg-slate-900 border border-white/20 rounded-2xl shadow-2xl p-4 z-[100] grid grid-cols-2 gap-2">
-                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-1 space-y-1">{HOURS.map(h => (<button key={h} type="button" onClick={() => setForm(prev => ({...prev, start_time: `${h}:${prev.start_time.split(':')[1]}`}))} className={`w-full py-2 rounded-lg text-sm font-bold transition font-mono ${form.start_time.startsWith(h) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{h}</button>))}</div>
-                                    <div className="space-y-1">{MINUTES.map(m => (<button key={m} type="button" onClick={() => { setForm(prev => ({...prev, start_time: `${prev.start_time.split(':')[0]}:${m}`})); setShowTimePicker(false); }} className={`w-full py-2 rounded-lg text-sm font-bold transition font-mono ${form.start_time.endsWith(m) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{m}</button>))}</div>
+                                    {/* CỘT GIỜ (HOURS) */}
+                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-1 space-y-1">
+                                        {HOURS.map(h => (<button key={h} type="button" onClick={() => setForm(prev => ({...prev, start_time: `${h}:${prev.start_time.split(':')[1]}`}))} className={`w-full py-2 rounded-lg text-sm font-bold transition font-mono ${form.start_time.startsWith(h) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{h}</button>))}
+                                    </div>
+                                    
+                                    {/* CỘT PHÚT (MINUTES) - ĐÃ UPDATE SCROLL */}
+                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-1 space-y-1">
+                                        {MINUTES.map(m => (<button key={m} type="button" onClick={() => { setForm(prev => ({...prev, start_time: `${prev.start_time.split(':')[0]}:${m}`})); setShowTimePicker(false); }} className={`w-full py-2 rounded-lg text-sm font-bold transition font-mono ${form.start_time.endsWith(m) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{m}</button>))}
+                                    </div>
                                 </div>
                              )}
                         </div>
