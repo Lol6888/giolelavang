@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { format, parseISO, addDays, isSameDay, differenceInSeconds } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { Clock, MapPin, Calendar, Sun, CloudRain, X, Loader2, User } from 'lucide-react'
+import { Clock, MapPin, Calendar, Sun, CloudRain, X, Loader2, User, PlayCircle } from 'lucide-react'
 
 // --- TYPES ---
 type Schedule = {
@@ -13,6 +13,7 @@ type Schedule = {
 export default function CinematicHome() {
   const [schedules, setSchedules] = useState<Schedule[]>([]) 
   const [weekSchedules, setWeekSchedules] = useState<Schedule[]>([]) 
+  // State mới để lưu lễ ngày mai (phòng khi hết lễ hôm nay)
   const [nextDaySchedule, setNextDaySchedule] = useState<Schedule | null>(null)
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState({ temp: 28, code: 0, desc: 'Đang tải...' })
@@ -25,10 +26,11 @@ export default function CinematicHome() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // --- CONFIG ---
-  const MASS_DURATION_MINUTES = 30; // Thời lượng lễ: 30 phút
-  const COUNTDOWN_THRESHOLD_MINUTES = 15; // Đếm ngược trước: 15 phút
+  const MASS_DURATION_MINUTES = 30; // Thời lượng lễ mặc định: 30 phút
+  const COUNTDOWN_THRESHOLD_MINUTES = 15; // Bắt đầu đếm ngược khi còn: 15 phút
 
   // --- LOGIC ---
+  // Timer chạy mỗi giây để update đồng hồ và logic đếm ngược
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t) }, [])
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export default function CinematicHome() {
     const { data: todayData } = await supabase.from('schedules').select('*').eq('date', todayStr).order('start_time')
     if (todayData) setSchedules(todayData)
 
-    // 2. Lấy lễ sớm nhất của ngày mai (để dự phòng khi hết lễ hôm nay)
+    // 2. Lấy lễ sớm nhất của ngày mai (để hiển thị khi hết lễ hôm nay)
     const { data: tomorrowData } = await supabase.from('schedules').select('*').eq('date', tomorrowStr).order('start_time').limit(1).single()
     if (tomorrowData) setNextDaySchedule(tomorrowData)
   }
@@ -104,11 +106,13 @@ export default function CinematicHome() {
   }, [weather.code])
 
   // --- HELPER: FORMAT COUNTDOWN (MM:SS) ---
+  // Hàm này tính toán số phút và giây còn lại
   const getCountdownString = (targetTimeStr: string) => {
       const [h, m] = targetTimeStr.split(':').map(Number);
       const target = new Date(now);
       target.setHours(h, m, 0, 0);
       
+      // Tính sai biệt bằng giây
       let diffSec = differenceInSeconds(target, now);
       if (diffSec < 0) return "00:00"; 
 
@@ -120,7 +124,7 @@ export default function CinematicHome() {
       return `${mm}:${ss}`;
   }
 
-  // --- CORE LOGIC: XÁC ĐỊNH TRẠNG THÁI ---
+  // --- CORE LOGIC: XÁC ĐỊNH TRẠNG THÁI HIỂN THỊ ---
   const getStatus = () => {
     const timeStr = format(now, 'HH:mm:ss');
     
@@ -137,32 +141,32 @@ export default function CinematicHome() {
 
     if(current) return { type: 'happening', item: current };
 
-    // 2. Tìm lễ sắp tới trong ngày (Start > Now)
+    // 2. Tìm lễ sắp tới trong ngày hôm nay (Start > Now)
     const next = schedules.find(s => s.start_time > timeStr);
     
     if(next) {
-        // Tính khoảng cách thời gian
+        // Tính khoảng cách thời gian (phút) để quyết định hiển thị
         const [h, m] = next.start_time.split(':').map(Number);
         const target = new Date(now);
         target.setHours(h, m, 0, 0);
         const diffMinutes = (target.getTime() - now.getTime()) / 60000;
 
-        // Nếu còn <= 15 phút -> Đếm ngược
+        // Nếu còn <= 15 phút -> Chuyển sang chế độ Đếm ngược (Countdown)
         if (diffMinutes <= COUNTDOWN_THRESHOLD_MINUTES) {
             return { type: 'countdown', item: next, diffString: getCountdownString(next.start_time) };
         } 
-        // Nếu còn > 15 phút -> Chế độ chờ (Upcoming)
+        // Nếu còn > 15 phút -> Chế độ Chờ (Upcoming - Sẵn sàng)
         else {
             return { type: 'upcoming', item: next, isTomorrow: false };
         }
     }
     
-    // 3. Hết lễ hôm nay -> Hiển thị lễ ngày mai
+    // 3. Hết lễ hôm nay -> Hiển thị lễ đầu tiên của ngày mai
     if (nextDaySchedule) {
         return { type: 'upcoming', item: nextDaySchedule, isTomorrow: true };
     }
 
-    // 4. Không còn lễ nào (cả hôm nay và mai chưa cập nhật)
+    // 4. Trường hợp hiếm: Không có lễ nào (cả hôm nay và ngày mai chưa có lịch)
     return { type: 'finished' };
   }
   
@@ -198,6 +202,9 @@ export default function CinematicHome() {
                     <span className="mr-24">🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.</span>
                     <span className="mr-24">🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.</span>
                     <span className="mr-24">✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ.</span>
+                    <span className="mr-24">🔔 Đăng ký giờ Lễ: Văn phòng Trung Tâm (0329 981 798)</span>
+                    <span className="mr-24">🔔 Đăng ký Lưu trú: Nhà Hành Hương (0344 151 508)</span>
+                    <span className="mr-24">🔔 Đăng ký Ẩm Thực: Nhà khách Lâm Bích (0394 430 664)</span>
                 </div>
             </div>
         </div>
@@ -225,7 +232,7 @@ export default function CinematicHome() {
                                 <div className="flex items-center gap-2 text-white/80 font-serif italic text-base sm:text-lg border-b border-white/10 pb-3 sm:pb-4 mb-0">
                                     <User size={18}/> <span className="truncate">Chủ tế: {status.item.priest_name}</span>
                                 </div>
-                                {/* BỎ NÚT XEM TRỰC TIẾP -> HIỆN TEXT TRẠNG THÁI */}
+                                {/* THAY NÚT XEM TRỰC TIẾP BẰNG TEXT TRẠNG THÁI */}
                                 <div className="mt-4 flex items-center gap-3 text-red-400 font-bold uppercase tracking-widest animate-pulse">
                                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                                     Thánh lễ đang cử hành
@@ -244,7 +251,7 @@ export default function CinematicHome() {
                                 </div>
                                 <div className="bg-black/30 rounded-xl p-3 sm:p-4 border border-white/10 mb-1 inline-block w-full text-center lg:text-left">
                                     <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">Thời gian còn lại</div>
-                                    {/* ĐỒNG HỒ ĐẾM NGƯỢC (MM:SS) */}
+                                    {/* ĐỒNG HỒ ĐẾM NGƯỢC (MM:SS) - SỐ TO, FONT MONO */}
                                     <div className="font-mono text-6xl sm:text-7xl lg:text-9xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
                                         {status.diffString}
                                     </div>
@@ -252,13 +259,14 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 3. UPCOMING (CÒN > 15 PHÚT HOẶC NGÀY MAI) */}
+                        {/* 3. UPCOMING (CÒN > 15 PHÚT HOẶC LỄ NGÀY MAI) */}
                         {status.type === 'upcoming' && status.item && (
                             <div className={cardStyle}>
                                 <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                    {/* Chỉ báo khác biệt nếu là ngày mai */}
                                     <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${status.isTomorrow ? 'bg-blue-400 shadow-[0_0_10px_#60a5fa]' : 'bg-green-400 shadow-[0_0_10px_#4ade80]'}`}></div>
                                     <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest ${status.isTomorrow ? 'text-blue-300' : 'text-green-300'}`}>
-                                        {status.isTomorrow ? 'Ngày mai' : 'Sẵn sàng'}
+                                        {status.isTomorrow ? 'Lễ ngày mai' : 'Sẵn sàng'}
                                     </span>
                                 </div>
                                 <div className="mb-3 sm:mb-4">
@@ -270,7 +278,8 @@ export default function CinematicHome() {
                                         <div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div>
                                         <div className="text-xl sm:text-2xl font-bold text-white font-mono">
                                             {status.item.start_time.slice(0,5)}
-                                            {status.isTomorrow && <span className="text-xs text-white/50 ml-1 align-top font-sans">(Mai)</span>}
+                                            {/* Chú thích ngày mai */}
+                                            {status.isTomorrow && <span className="text-xs text-white/50 ml-1 align-top font-sans font-medium">(Ngày mai)</span>}
                                         </div>
                                     </div>
                                     <div className="w-px bg-white/20"></div>
@@ -291,10 +300,12 @@ export default function CinematicHome() {
                         <div className={widgetContainerStyle}>
                             <div className={widgetStyle}>
                                 {weather.code >= 51 ? <CloudRain className="text-blue-400 w-6 h-6 sm:w-8 sm:h-8"/> : <Sun className="text-yellow-400 w-6 h-6 sm:w-8 sm:h-8"/>}
+                                {/* NHIỆT ĐỘ - FONT MONO */}
                                 <div><div className="text-xl sm:text-2xl font-bold text-white font-mono">{weather.temp}°C</div><div className="text-[10px] sm:text-xs text-white/70 uppercase font-bold">{weather.desc}</div></div>
                             </div>
                             <div className={widgetStyle}>
                                 <Clock className="text-white/60 w-5 h-5 sm:w-6 sm:h-6"/>
+                                {/* ĐỒNG HỒ - FONT MONO */}
                                 <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-widest">{format(now, 'HH:mm')}</div>
                             </div>
                         </div>
@@ -311,6 +322,7 @@ export default function CinematicHome() {
                                     <Calendar size={14} className="text-gold"/>
                                     <span className="text-[10px] sm:text-xs font-bold text-gold uppercase tracking-wider hidden sm:block">Lịch Tuần</span>
                                 </button>
+                                {/* NGÀY THÁNG - FONT MONO */}
                                 <span className="text-[10px] sm:text-xs font-bold text-white/80 bg-white/10 px-2 sm:px-3 py-1.5 rounded-full backdrop-blur border border-white/10 font-mono">
                                     {format(now, 'dd/MM/yyyy', {locale: vi})}
                                 </span>
@@ -407,12 +419,14 @@ export default function CinematicHome() {
                                         <div key={date} className={`rounded-xl border p-3 sm:p-4 transition duration-300 ${isTodayDate ? 'border-gold bg-gold/10 ring-1 ring-gold/50' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>
                                             <div className="flex justify-between items-center mb-2 sm:mb-3 border-b border-white/10 pb-2">
                                                 <span className="font-serif font-bold text-lg sm:text-xl text-white capitalize">{format(parseISO(date), 'EEEE', {locale: vi})}</span>
+                                                {/* NGÀY THÁNG - FONT MONO */}
                                                 <span className={`text-[10px] sm:text-xs font-bold border border-current px-2 py-0.5 rounded-full font-mono ${isTodayDate ? 'text-gold' : 'text-white/70'}`}>{format(parseISO(date), 'dd/MM')}</span>
                                             </div>
                                             <div className="space-y-0.5 sm:space-y-1">
                                                 {items.length === 0 ? <p className="text-[10px] text-white/30 italic py-2 text-center">- Trống -</p> : 
                                                 items.map((ev: any) => (
                                                     <div key={ev.id} className="flex items-start gap-2 sm:gap-3 py-2 border-b border-white/5 last:border-0 group">
+                                                        {/* GIỜ LỄ - FONT MONO */}
                                                         <div className="font-mono text-white font-bold bg-white/10 px-1.5 rounded text-xs sm:text-sm whitespace-nowrap">{ev.start_time.slice(0,5)}</div>
                                                         <div className="min-w-0">
                                                             <div className="text-xs sm:text-sm font-bold text-white leading-tight truncate">{ev.title}</div>
