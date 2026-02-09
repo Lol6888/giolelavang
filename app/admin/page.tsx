@@ -237,8 +237,9 @@ export default function AdminPage() {
       return `Năm ${format(currentDate, 'yyyy')}`;
   }
 
-  const HOURS = Array.from({length: 19}, (_, i) => (i + 4).toString().padStart(2, '0'));
-  const MINUTES = ['00', '15', '30', '45'];
+  // --- UPDATE: FULL 24 GIỜ & PHÚT CÁCH 5 ---
+  const HOURS = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0'));
+  const MINUTES = Array.from({length: 12}, (_, i) => (i * 5).toString().padStart(2, '0'));
 
   return (
     <div ref={mainContainerRef} className="h-screen w-full bg-slate-950 text-slate-200 font-sans overflow-y-auto overflow-x-hidden pb-40">
@@ -383,7 +384,7 @@ export default function AdminPage() {
 
                 {/* CONTENT AREA */}
                 <div className="p-4 flex-grow bg-black/20 overflow-y-auto custom-scrollbar">
-                    {/* ... VIEW LOGIC ... */}
+                    {/* VIEW NĂM */}
                     {viewMode === 'year' && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                             {eachMonthOfInterval({ start: startOfYear(currentDate), end: endOfYear(currentDate) }).map(month => {
@@ -399,6 +400,7 @@ export default function AdminPage() {
                             })}
                         </div>
                     )}
+                    {/* VIEW THÁNG */}
                     {viewMode === 'month' && (
                         <div className="h-full flex flex-col">
                              <div className="grid grid-cols-7 gap-1 mb-2">
@@ -426,6 +428,7 @@ export default function AdminPage() {
                              </div>
                         </div>
                     )}
+                    {/* VIEW TUẦN */}
                     {viewMode === 'week' && (
                          <div className="space-y-6 pb-20">
                              {Array.from({length: 7}).map((_, i) => {
