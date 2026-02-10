@@ -372,14 +372,16 @@ export default function CinematicHome() {
                 </div>
 
                 <div className="flex-grow min-w-0 pl-2">
-                    <div className={`text-xl sm:text-2xl text-shadow-light truncate font-serif
+                    {/* CẬP NHẬT: XÓA TRUNCATE ĐỂ HIỆN FULL TEXT */}
+                    <div className={`text-xl sm:text-2xl text-shadow-light font-serif leading-snug
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
                         {ev.title}
                     </div>
-                    <div className="flex items-center gap-2 text-sm sm:text-base text-white/70 uppercase font-bold tracking-wider mt-1 truncate">
-                        <MapPin size={14}/> {ev.location}
+                    <div className="flex items-start gap-2 text-sm sm:text-base text-white/70 uppercase font-bold tracking-wider mt-1">
+                        <MapPin size={14} className="shrink-0 mt-1"/>
+                        <span>{ev.location}</span>
                     </div>
-                    <div className="text-xs sm:text-sm text-white/60 truncate italic mt-0.5">{ev.priest_name}</div>
+                    <div className="text-xs sm:text-sm text-white/60 italic mt-0.5">{ev.priest_name}</div>
                 </div>
 
                 {isHappening && <span className="text-[10px] sm:text-xs font-bold bg-red-600 text-white px-2 py-1 rounded shadow animate-pulse shrink-0">LIVE</span>}
