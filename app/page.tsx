@@ -319,10 +319,10 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN (DANH SÁCH LỄ - UPDATED GLASS EFFECT) */}
+                {/* RIGHT COLUMN (DANH SÁCH LỄ - UPDATED BG STYLE TO MATCH CARD) */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
-                    {/* CẬP NHẬT: Thay đổi class nền ở đây để đục hơn (bg-black/60) và mờ hơn (backdrop-blur-xl) */}
-                    <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
+                    {/* CẬP NHẬT: Thay bg-black/60 thành bg-black/40 và blur-xl thành blur-md */}
+                    <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
                         
                         {/* HEADER */}
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 flex-none">
@@ -399,10 +399,9 @@ export default function CinematicHome() {
             </div>
         </div>
 
-        {/* WEEK MODAL - UPDATED OPACITY */}
+        {/* WEEK MODAL */}
         {(showWeekModal || modalVisible) && (
             <div className={`fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md transition-opacity duration-300 ${modalVisible ? 'opacity-100' : 'opacity-0'}`}>
-                {/* CẬP NHẬT: Tăng độ đục của modal (bg-slate-900/90) */}
                 <div className={`bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-2xl sm:rounded-3xl w-[95%] sm:w-full max-w-6xl max-h-[85vh] sm:max-h-[90vh] flex flex-col shadow-2xl transition-transform duration-300 ${modalVisible ? 'scale-100' : 'scale-95'}`}>
                     <div className="flex justify-between items-center p-4 sm:p-6 border-b border-white/10 bg-white/5 rounded-t-2xl sm:rounded-t-3xl">
                         <div>
