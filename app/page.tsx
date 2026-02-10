@@ -319,11 +319,12 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN (DANH SÁCH LỄ - UPDATED UI MOBILE) */}
+                {/* RIGHT COLUMN (DANH SÁCH LỄ - UPDATED GLASS EFFECT) */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
-                    <div className="glass-panel rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full">
+                    {/* CẬP NHẬT: Thay đổi class nền ở đây để đục hơn (bg-black/60) và mờ hơn (backdrop-blur-xl) */}
+                    <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
                         
-                        {/* HEADER - UPDATED MOBILE UI (2 HÀNG) */}
+                        {/* HEADER */}
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 flex-none">
                             <h2 className="font-serif text-2xl sm:text-xl font-bold text-white tracking-wide truncate">Thánh Lễ hôm nay</h2>
                             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -353,7 +354,6 @@ export default function CinematicHome() {
         const isUpcoming = timeStr < ev.start_time;
         const isPast = timeStr >= endStr;
 
-        // CẬP NHẬT PADDING CHO MOBILE THOẢI MÁI HƠN
         let rowClass = "flex items-center gap-3 sm:gap-6 py-5 px-4 sm:py-6 sm:px-6 rounded-2xl transition-all border border-transparent group ";
         
         if (isHappening) {
@@ -370,19 +370,16 @@ export default function CinematicHome() {
 
         return (
             <div key={ev.id} className={rowClass}>
-                {/* GIỜ: Thu nhỏ trên mobile để dành chỗ cho nội dung */}
                 <div className={`w-16 sm:w-24 text-right text-2xl sm:text-4xl text-shadow-light font-mono tracking-tight shrink-0
                     ${isHappening ? 'text-red-400 font-bold' : (isUpcoming ? 'text-gold font-bold' : 'text-white')}`}>
                     {ev.start_time.slice(0,5)}
                 </div>
 
                 <div className="flex-grow min-w-0 pl-2 sm:pl-2">
-                    {/* TIÊU ĐỀ: Chữ vừa phải trên mobile, xuống dòng nếu dài */}
                     <div className={`text-lg sm:text-2xl text-shadow-light font-serif leading-tight mb-1
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
                         {ev.title}
                     </div>
-                    {/* ĐỊA ĐIỂM: Chữ nhỏ, dễ đọc */}
                     <div className="flex items-start gap-1.5 text-xs sm:text-base text-white/70 uppercase font-bold tracking-wider">
                         <MapPin size={12} className="shrink-0 mt-0.5 sm:mt-1"/>
                         <span className="leading-snug">{ev.location}</span>
@@ -402,10 +399,11 @@ export default function CinematicHome() {
             </div>
         </div>
 
-        {/* WEEK MODAL */}
+        {/* WEEK MODAL - UPDATED OPACITY */}
         {(showWeekModal || modalVisible) && (
             <div className={`fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md transition-opacity duration-300 ${modalVisible ? 'opacity-100' : 'opacity-0'}`}>
-                <div className={`bg-[#1a1a24] border border-white/20 rounded-2xl sm:rounded-3xl w-[95%] sm:w-full max-w-6xl max-h-[85vh] sm:max-h-[90vh] flex flex-col shadow-2xl transition-transform duration-300 ${modalVisible ? 'scale-100' : 'scale-95'}`}>
+                {/* CẬP NHẬT: Tăng độ đục của modal (bg-slate-900/90) */}
+                <div className={`bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-2xl sm:rounded-3xl w-[95%] sm:w-full max-w-6xl max-h-[85vh] sm:max-h-[90vh] flex flex-col shadow-2xl transition-transform duration-300 ${modalVisible ? 'scale-100' : 'scale-95'}`}>
                     <div className="flex justify-between items-center p-4 sm:p-6 border-b border-white/10 bg-white/5 rounded-t-2xl sm:rounded-t-3xl">
                         <div>
                             <h2 className="font-serif text-xl sm:text-3xl font-bold text-white text-shadow">Lịch Thánh Lễ trong tuần này</h2>
