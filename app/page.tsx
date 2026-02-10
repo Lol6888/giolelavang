@@ -263,7 +263,6 @@ export default function CinematicHome() {
                                 </div>
                                 <div className="bg-black/30 rounded-xl p-3 sm:p-4 border border-white/10 mb-1 inline-block w-full text-center lg:text-left">
                                     <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">Thời gian còn lại</div>
-                                    {/* UPDATED: SIZE CHỮ ĐÃ GIẢM KHOẢNG 50% (từ 9xl xuống 6xl) */}
                                     <div className="font-mono text-4xl sm:text-5xl lg:text-6xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
                                         {status.diffString}
                                     </div>
@@ -320,23 +319,27 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN */}
+                {/* RIGHT COLUMN (DANH SÁCH LỄ - UPDATED UI MOBILE) */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
-                    <div className="glass-panel rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[400px] lg:h-full">
-                        <div className="p-4 sm:p-6 border-b border-white/10 bg-white/5 flex justify-between items-center flex-none">
-                            <h2 className="font-serif text-lg sm:text-xl font-bold text-white tracking-wide truncate">Thánh Lễ hôm nay</h2>
-                            <div className="flex items-center gap-2 shrink-0">
-                                <button onClick={() => setShowWeekModal(true)} className="flex items-center gap-2 bg-gold/20 hover:bg-gold/40 border border-gold/30 px-3 py-1.5 rounded-full transition group cursor-pointer active:scale-95">
-                                    <Calendar size={14} className="text-gold"/>
-                                    <span className="text-[10px] sm:text-xs font-bold text-gold uppercase tracking-wider hidden sm:block">Lịch Tuần</span>
+                    <div className="glass-panel rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full">
+                        
+                        {/* HEADER - UPDATED MOBILE UI (2 HÀNG) */}
+                        <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 flex-none">
+                            <h2 className="font-serif text-2xl sm:text-xl font-bold text-white tracking-wide truncate">Thánh Lễ hôm nay</h2>
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <button onClick={() => setShowWeekModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gold/20 hover:bg-gold/40 border border-gold/30 py-3 sm:py-1.5 px-4 sm:px-3 rounded-full transition group cursor-pointer active:scale-95">
+                                    <Calendar size={16} className="text-gold sm:w-3.5 sm:h-3.5"/>
+                                    <span className="text-sm sm:text-xs font-bold text-gold uppercase tracking-wider">Lịch Tuần</span>
                                 </button>
-                                <span className="text-[10px] sm:text-xs font-bold text-white/80 bg-white/10 px-2 sm:px-3 py-1.5 rounded-full backdrop-blur border border-white/10 font-mono">
+                                <span className="flex-1 sm:flex-none text-center text-sm sm:text-xs font-bold text-white/80 bg-white/10 py-3 sm:py-1.5 px-4 sm:px-3 rounded-full backdrop-blur border border-white/10 font-mono">
                                     {format(now, 'dd/MM/yyyy', {locale: vi})}
                                 </span>
                             </div>
                         </div>
-                        <div className="overflow-y-auto flex-grow p-4 sm:p-6 custom-scrollbar">
-                            <div className="space-y-4 sm:space-y-6 relative pl-8 before:absolute before:left-[35px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
+
+                        {/* LIST AREA */}
+                        <div className="overflow-y-auto flex-grow p-3 sm:p-4 custom-scrollbar">
+                            <div className="space-y-3 sm:space-y-6 relative pl-6 sm:pl-8 before:absolute before:left-[27px] sm:before:left-[35px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
     {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-base">Không có lễ hôm nay.</p> :
     schedules.map(ev => {
         const timeStr = format(now, 'HH:mm:ss');
@@ -350,7 +353,8 @@ export default function CinematicHome() {
         const isUpcoming = timeStr < ev.start_time;
         const isPast = timeStr >= endStr;
 
-        let rowClass = "flex items-center gap-4 sm:gap-6 py-6 px-6 rounded-2xl transition-all border border-transparent group ";
+        // CẬP NHẬT PADDING CHO MOBILE THOẢI MÁI HƠN
+        let rowClass = "flex items-center gap-3 sm:gap-6 py-5 px-4 sm:py-6 sm:px-6 rounded-2xl transition-all border border-transparent group ";
         
         if (isHappening) {
             rowClass += "bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 shadow-xl transform scale-[1.03]";
@@ -366,20 +370,22 @@ export default function CinematicHome() {
 
         return (
             <div key={ev.id} className={rowClass}>
-                <div className={`w-24 text-right text-3xl sm:text-4xl text-shadow-light font-mono tracking-tight 
+                {/* GIỜ: Thu nhỏ trên mobile để dành chỗ cho nội dung */}
+                <div className={`w-16 sm:w-24 text-right text-2xl sm:text-4xl text-shadow-light font-mono tracking-tight shrink-0
                     ${isHappening ? 'text-red-400 font-bold' : (isUpcoming ? 'text-gold font-bold' : 'text-white')}`}>
                     {ev.start_time.slice(0,5)}
                 </div>
 
-                <div className="flex-grow min-w-0 pl-2">
-                    {/* CẬP NHẬT: XÓA TRUNCATE ĐỂ HIỆN FULL TEXT */}
-                    <div className={`text-xl sm:text-2xl text-shadow-light font-serif leading-snug
+                <div className="flex-grow min-w-0 pl-2 sm:pl-2">
+                    {/* TIÊU ĐỀ: Chữ vừa phải trên mobile, xuống dòng nếu dài */}
+                    <div className={`text-lg sm:text-2xl text-shadow-light font-serif leading-tight mb-1
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
                         {ev.title}
                     </div>
-                    <div className="flex items-start gap-2 text-sm sm:text-base text-white/70 uppercase font-bold tracking-wider mt-1">
-                        <MapPin size={14} className="shrink-0 mt-1"/>
-                        <span>{ev.location}</span>
+                    {/* ĐỊA ĐIỂM: Chữ nhỏ, dễ đọc */}
+                    <div className="flex items-start gap-1.5 text-xs sm:text-base text-white/70 uppercase font-bold tracking-wider">
+                        <MapPin size={12} className="shrink-0 mt-0.5 sm:mt-1"/>
+                        <span className="leading-snug">{ev.location}</span>
                     </div>
                     <div className="text-xs sm:text-sm text-white/60 italic mt-0.5">{ev.priest_name}</div>
                 </div>
