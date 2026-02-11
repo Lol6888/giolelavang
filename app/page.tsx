@@ -17,6 +17,13 @@ export default function CinematicHome() {
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState({ temp: 28, code: 0, desc: 'Đang tải...' })
   
+  // State cho thông báo chạy (Marquee)
+  const [marqueeList, setMarqueeList] = useState<string[]>([
+      "🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.",
+      "🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.",
+      "✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ."
+  ]) // Mặc định hiển thị khi chưa tải xong
+
   // Modal State
   const [showWeekModal, setShowWeekModal] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
@@ -31,6 +38,7 @@ export default function CinematicHome() {
   // --- LOGIC ---
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t) }, [])
 
+  // Fetch Weather
   useEffect(() => {
     async function fetchWeather() {
       try {
@@ -47,6 +55,7 @@ export default function CinematicHome() {
     fetchWeather(); setInterval(fetchWeather, 600000)
   }, [])
 
+  // Fetch Schedules & Announcements
   const fetchSchedules = async () => {
     const todayStr = format(new Date(), 'yyyy-MM-dd')
     const tomorrowStr = format(addDays(new Date(), 1), 'yyyy-MM-dd')
@@ -55,9 +64,16 @@ export default function CinematicHome() {
     const { data: todayData } = await supabase.from('schedules').select('*').eq('date', todayStr).order('start_time')
     if (todayData) setSchedules(todayData)
 
-    // 2. Lấy lễ sớm nhất của ngày mai (để hiển thị khi hết lễ hôm nay)
+    // 2. Lấy lễ sớm nhất của ngày mai
     const { data: tomorrowData } = await supabase.from('schedules').select('*').eq('date', tomorrowStr).order('start_time').limit(1).single()
     if (tomorrowData) setNextDaySchedule(tomorrowData)
+  }
+
+  const fetchAnnouncements = async () => {
+      const { data } = await supabase.from('announcements').select('content').eq('is_active', true).order('id');
+      if (data && data.length > 0) {
+          setMarqueeList(data.map(item => item.content));
+      }
   }
 
   const fetchWeekSchedules = async () => {
@@ -69,11 +85,20 @@ export default function CinematicHome() {
       setLoadingWeek(false);
   }
 
+  // Realtime Subscription
   useEffect(() => {
     fetchSchedules()
-    const ch = supabase.channel('home').on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, () => {
+    fetchAnnouncements() // Tải thông báo ngay khi vào trang
+
+    const ch = supabase.channel('home')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, () => {
         fetchSchedules(); if(showWeekModal) fetchWeekSchedules();
-    }).subscribe()
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+        fetchAnnouncements(); // Tự cập nhật thông báo khi Admin sửa
+    })
+    .subscribe()
+
     return () => { supabase.removeChannel(ch) }
   }, [])
 
@@ -194,26 +219,20 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - FIXED SPACING (ĐÃ SỬA LỖI DÍNH NHAU) */}
+        {/* MARQUEE - DYNAMIC DATA FROM DB */}
         <div className="sticky top-0 z-[60] bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm py-2 px-4 border-b border-white/10 shrink-0">
              <div className="marquee-container w-full flex overflow-hidden">
-                {/* TRACK 1 */}
+                {/* TRACK 1 (Data động) */}
                 <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee">
-                    <span>🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.</span>
-                    <span>🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.</span>
-                    <span>✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ.</span>
-                    <span>🔔 Đăng ký giờ Lễ: Văn phòng Trung Tâm (0329 981 798)</span>
-                    <span>🔔 Đăng ký Lưu trú: Nhà Hành Hương (0344 151 508)</span>
-                    <span>🔔 Đăng ký Ẩm Thực: Nhà khách Lâm Bích (0394 430 664)</span>
+                    {marqueeList.map((text, i) => (
+                        <span key={`t1-${i}`}>{text}</span>
+                    ))}
                 </div>
-                {/* TRACK 2 (DUPLICATE) */}
+                {/* TRACK 2 (Duplicate để loop - Data động) */}
                 <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee" aria-hidden="true">
-                    <span>🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.</span>
-                    <span>🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.</span>
-                    <span>✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ.</span>
-                    <span>🔔 Đăng ký giờ Lễ: Văn phòng Trung Tâm (0329 981 798)</span>
-                    <span>🔔 Đăng ký Lưu trú: Nhà Hành Hương (0344 151 508)</span>
-                    <span>🔔 Đăng ký Ẩm Thực: Nhà khách Lâm Bích (0394 430 664)</span>
+                    {marqueeList.map((text, i) => (
+                        <span key={`t2-${i}`}>{text}</span>
+                    ))}
                 </div>
             </div>
         </div>
@@ -315,9 +334,9 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN (DANH SÁCH LỄ - UPDATED GLASS EFFECT BG-BLACK/40) */}
+                {/* RIGHT COLUMN (DANH SÁCH LỄ - UPDATED BG STYLE TO MATCH CARD) */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
-                    {/* CẬP NHẬT: Thay đổi class nền để khớp với cardStyle (bg-black/40) */}
+                    {/* CẬP NHẬT: Thay bg-black/60 thành bg-black/40 và blur-xl thành blur-md */}
                     <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
                         
                         {/* HEADER */}
