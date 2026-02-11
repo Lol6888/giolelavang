@@ -52,13 +52,36 @@ export default function AdminPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // CHECK AUTH & LOAD DATA
   useEffect(() => {
     const checkUser = async () => {
+      // 1. Kiểm tra Session
       const { data: { session }, error: authError } = await supabase.auth.getSession()
-      if (authError || !session) { router.push('/login'); return; }
       
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-      setCurrentUser({ email: session.user.email!, role: profile?.role || 'member' });
+      // Nếu không có session -> Đá về Login
+      if (authError || !session) { 
+          await supabase.auth.signOut(); // Đảm bảo xóa sạch rác client
+          router.push('/login'); 
+          return; 
+      }
+      
+      // 2. Kiểm tra Profile trong Database (QUAN TRỌNG)
+      const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+      // LOGIC MỚI: Nếu lỗi hoặc không tìm thấy profile (đã bị xóa) -> CƯỠNG CHẾ ĐĂNG XUẤT
+      if (profileError || !profile) {
+          console.warn("Tài khoản không tồn tại hoặc đã bị xóa. Đang đăng xuất...");
+          await supabase.auth.signOut(); // Xóa token client
+          router.push('/login'); // Đá về trang login
+          return;
+      }
+
+      // Nếu OK -> Set User
+      setCurrentUser({ email: session.user.email!, role: profile.role });
 
       fetchDataByViewMode()
       loadLocations()
