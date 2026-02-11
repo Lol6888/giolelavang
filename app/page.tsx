@@ -22,7 +22,7 @@ export default function CinematicHome() {
       "🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.",
       "🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.",
       "✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ."
-  ]) // Mặc định hiển thị khi chưa tải xong
+  ]) 
 
   // Modal State
   const [showWeekModal, setShowWeekModal] = useState(false)
@@ -32,8 +32,8 @@ export default function CinematicHome() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // --- CONFIG ---
-  const MASS_DURATION_MINUTES = 30; // Thời lượng lễ mặc định: 30 phút
-  const COUNTDOWN_THRESHOLD_MINUTES = 15; // Bắt đầu đếm ngược khi còn: 15 phút
+  const MASS_DURATION_MINUTES = 30; 
+  const COUNTDOWN_THRESHOLD_MINUTES = 15; 
 
   // --- LOGIC ---
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t) }, [])
@@ -88,14 +88,14 @@ export default function CinematicHome() {
   // Realtime Subscription
   useEffect(() => {
     fetchSchedules()
-    fetchAnnouncements() // Tải thông báo ngay khi vào trang
+    fetchAnnouncements() 
 
     const ch = supabase.channel('home')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, () => {
         fetchSchedules(); if(showWeekModal) fetchWeekSchedules();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
-        fetchAnnouncements(); // Tự cập nhật thông báo khi Admin sửa
+        fetchAnnouncements(); 
     })
     .subscribe()
 
@@ -188,9 +188,9 @@ export default function CinematicHome() {
 
   // --- NEW LOGIC: BACKGROUND FILTER ---
   const getBgFilter = () => {
-      if (weather.code >= 51) return 'none'; // Mưa: Giữ nguyên màu gốc
-      if (weather.code <= 3) return 'brightness(1.05) saturate(1.1)'; // Nắng: Tăng sáng và rực màu
-      return 'brightness(1.1) saturate(1.2)'; // Mây: Sáng và rực rỡ hơn
+      if (weather.code >= 51) return 'none'; 
+      if (weather.code <= 3) return 'brightness(1.05) saturate(1.1)'; 
+      return 'brightness(1.1) saturate(1.2)'; 
   }
 
   // CSS CLASSES
@@ -200,7 +200,7 @@ export default function CinematicHome() {
 
   return (
     <div className="relative h-screen font-sans text-slate-100 overflow-hidden flex flex-col">
-        {/* BACKGROUND - UPDATED FILTER LOGIC */}
+        {/* BACKGROUND */}
         <div 
             className="absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000"
             style={{ filter: getBgFilter() }}
@@ -219,16 +219,16 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - DYNAMIC DATA FROM DB */}
+        {/* MARQUEE */}
         <div className="sticky top-0 z-[60] bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm py-2 px-4 border-b border-white/10 shrink-0">
              <div className="marquee-container w-full flex overflow-hidden">
-                {/* TRACK 1 (Data động) */}
+                {/* TRACK 1 */}
                 <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee">
                     {marqueeList.map((text, i) => (
                         <span key={`t1-${i}`}>{text}</span>
                     ))}
                 </div>
-                {/* TRACK 2 (Duplicate để loop - Data động) */}
+                {/* TRACK 2 */}
                 <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee" aria-hidden="true">
                     {marqueeList.map((text, i) => (
                         <span key={`t2-${i}`}>{text}</span>
@@ -267,7 +267,7 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 2. COUNTDOWN (ĐÃ GIẢM SIZE 50%) */}
+                        {/* 2. COUNTDOWN */}
                         {status.type === 'countdown' && status.item && (
                             <div className={`${cardStyle} border-gold/30`}>
                                 <div className="bg-gold text-marian-dark font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded inline-block mb-2 sm:mb-3 uppercase tracking-widest shadow-lg">Sắp diễn ra</div>
@@ -334,11 +334,9 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN (DANH SÁCH LỄ - UPDATED BG STYLE TO MATCH CARD) */}
+                {/* RIGHT COLUMN (DANH SÁCH LỄ) */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
-                    {/* CẬP NHẬT: Thay bg-black/60 thành bg-black/40 và blur-xl thành blur-md */}
                     <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
-                        
                         {/* HEADER */}
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 flex-none">
                             <h2 className="font-serif text-2xl sm:text-xl font-bold text-white tracking-wide truncate">Thánh Lễ hôm nay</h2>
@@ -414,7 +412,7 @@ export default function CinematicHome() {
             </div>
         </div>
 
-        {/* WEEK MODAL */}
+        {/* WEEK MODAL - CẬP NHẬT: HIỂN THỊ RÕ RÀNG + THÊM LINH MỤC */}
         {(showWeekModal || modalVisible) && (
             <div className={`fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md transition-opacity duration-300 ${modalVisible ? 'opacity-100' : 'opacity-0'}`}>
                 <div className={`bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-2xl sm:rounded-3xl w-[95%] sm:w-full max-w-6xl max-h-[85vh] sm:max-h-[90vh] flex flex-col shadow-2xl transition-transform duration-300 ${modalVisible ? 'scale-100' : 'scale-95'}`}>
@@ -442,16 +440,30 @@ export default function CinematicHome() {
                                                 <span className="font-serif font-bold text-lg sm:text-xl text-white capitalize">{format(parseISO(date), 'EEEE', {locale: vi})}</span>
                                                 <span className={`text-[10px] sm:text-xs font-bold border border-current px-2 py-0.5 rounded-full font-mono ${isTodayDate ? 'text-gold' : 'text-white/70'}`}>{format(parseISO(date), 'dd/MM')}</span>
                                             </div>
-                                            <div className="space-y-0.5 sm:space-y-1">
+                                            <div className="space-y-2 sm:space-y-2"> {/* Tăng khoảng cách giữa các lễ */}
                                                 {items.length === 0 ? <p className="text-[10px] text-white/30 italic py-2 text-center">- Trống -</p> : 
                                                 items.map((ev: any) => (
                                                     <div key={ev.id} className="flex items-start gap-2 sm:gap-3 py-2 border-b border-white/5 last:border-0 group">
-                                                        <div className="font-mono text-white font-bold bg-white/10 px-1.5 rounded text-xs sm:text-sm whitespace-nowrap">{ev.start_time.slice(0,5)}</div>
-                                                        <div className="min-w-0">
-                                                            <div className="text-xs sm:text-sm font-bold text-white leading-tight truncate">{ev.title}</div>
-                                                            <div className="text-[10px] sm:text-[11px] text-white/50 uppercase flex items-center gap-1 mt-0.5 truncate">
-                                                                <MapPin size={10}/> <span className="truncate">{ev.location}</span>
+                                                        <div className="font-mono text-white font-bold bg-white/10 px-1.5 rounded text-xs sm:text-sm whitespace-nowrap mt-0.5">{ev.start_time.slice(0,5)}</div>
+                                                        
+                                                        {/* --- CẬP NHẬT: NỘI DUNG HIỂN THỊ RÕ RÀNG HƠN --- */}
+                                                        <div className="flex-grow min-w-0">
+                                                            {/* Tên lễ: Xuống dòng, không cắt bớt */}
+                                                            <div className="text-xs sm:text-sm font-bold text-white leading-tight break-words whitespace-normal">{ev.title}</div>
+                                                            
+                                                            {/* Địa điểm */}
+                                                            <div className="text-[10px] sm:text-[11px] text-white/50 uppercase flex items-start gap-1 mt-1">
+                                                                <MapPin size={10} className="shrink-0 mt-0.5"/> 
+                                                                <span className="break-words whitespace-normal">{ev.location}</span>
                                                             </div>
+
+                                                            {/* NGƯỜI CỬ HÀNH (MỚI THÊM) */}
+                                                            {ev.priest_name && (
+                                                                <div className="text-[10px] sm:text-[11px] text-white/40 italic mt-0.5 break-words whitespace-normal flex items-start gap-1">
+                                                                    <User size={10} className="shrink-0 mt-0.5"/> 
+                                                                    <span>{ev.priest_name}</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
