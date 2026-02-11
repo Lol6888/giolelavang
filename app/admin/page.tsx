@@ -2,13 +2,12 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-// 👇 IMPORT THÊM deleteMember
 import { createNewMember, deleteMember } from './actions' 
 import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock, Lock, Shield, Users, UserMinus, UserPlus, AlertCircle, CheckCircle, Megaphone, Save } from 'lucide-react'
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isBefore, startOfYear, endOfYear, eachMonthOfInterval, addYears, subYears } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
-// ... (Giữ nguyên các TYPE và STATE cũ) ...
+// --- TYPES ---
 type Schedule = { id: number; date: string; start_time: string; title: string; priest_name: string; note: string; location: string; last_updated_by?: string }
 type LocationItem = { id: number; name: string }
 type UserProfile = { id: string; email: string; role: 'member' | 'super_admin'; created_at: string }
@@ -16,32 +15,46 @@ type Announcement = { id: number; content: string; is_active: boolean; created_a
 type ViewMode = 'day' | 'week' | 'month' | 'year'
 
 export default function AdminPage() {
-  // ... (Giữ nguyên phần Init và Fetch Data cũ) ...
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [currentUser, setCurrentUser] = useState<{ email: string, role: string } | null>(null)
+  
+  // DATA STATES
   const [listSchedules, setListSchedules] = useState<Schedule[]>([])
   const [locations, setLocations] = useState<LocationItem[]>([])
   const [members, setMembers] = useState<UserProfile[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([]) 
+  
+  // UI STATES
   const [viewMode, setViewMode] = useState<ViewMode>('day') 
   const [currentDate, setCurrentDate] = useState(new Date()) 
+  
+  // MODAL STATES
   const [showMemberModal, setShowMemberModal] = useState(false)
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
   const [showAddUserForm, setShowAddUserForm] = useState(false) 
   const [isCreatingUser, setIsCreatingUser] = useState(false) 
+  
+  // POPUP STATES
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)
   const [showLocPicker, setShowLocPicker] = useState(false)
+  
+  // FORM STATES
   const [selectedDateForInput, setSelectedDateForInput] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [form, setForm] = useState({ start_time: '05:00', title: '', priest_name: '', note: '', location: '' })
   const [editingId, setEditingId] = useState<number | null>(null)
+  
+  // NEW USER FORM STATE
   const [newUser, setNewUser] = useState({ email: '', password: '' })
+
+  // REFS
   const calRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
   const locRef = useRef<HTMLDivElement>(null)
   const mainContainerRef = useRef<HTMLDivElement>(null)
 
+  // --- INIT ---
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (calRef.current && !calRef.current.contains(event.target as Node)) setShowCalendar(false)
@@ -52,36 +65,34 @@ export default function AdminPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // CHECK AUTH & LOAD DATA
+  // --- SECURITY CHECK ON LOAD ---
   useEffect(() => {
     const checkUser = async () => {
-      // 1. Kiểm tra Session
       const { data: { session }, error: authError } = await supabase.auth.getSession()
       
-      // Nếu không có session -> Đá về Login
+      // 1. Check Session
       if (authError || !session) { 
-          await supabase.auth.signOut(); // Đảm bảo xóa sạch rác client
+          await supabase.auth.signOut();
           router.push('/login'); 
           return; 
       }
       
-      // 2. Kiểm tra Profile trong Database (QUAN TRỌNG)
+      // 2. Check Database Profile (Double Check)
       const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
 
-      // LOGIC MỚI: Nếu lỗi hoặc không tìm thấy profile (đã bị xóa) -> CƯỠNG CHẾ ĐĂNG XUẤT
+      // NẾU KHÔNG TÌM THẤY PROFILE -> USER ĐÃ BỊ XÓA -> ĐÁ VĂNG
       if (profileError || !profile) {
-          console.warn("Tài khoản không tồn tại hoặc đã bị xóa. Đang đăng xuất...");
-          await supabase.auth.signOut(); // Xóa token client
-          router.push('/login'); // Đá về trang login
+          console.warn("User deleted found. Logging out...");
+          await supabase.auth.signOut();
+          router.push('/login');
           return;
       }
 
-      // Nếu OK -> Set User
-      setCurrentUser({ email: session.user.email!, role: profile.role });
+      setCurrentUser({ email: session.user.email!, role: profile?.role || 'member' });
 
       fetchDataByViewMode()
       loadLocations()
@@ -90,12 +101,34 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, currentDate, router]) 
 
+  // --- 🔥 SECURITY GATEKEEPER (HÀM BẢO VỆ) ---
+  // Hàm này sẽ chạy trước mọi hành động. Nếu user đã bị xóa, nó chặn lại và logout ngay.
+  const verifyUserAlive = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+          router.push('/login');
+          return false;
+      }
+      // Check "sống còn" trong DB
+      const { data, error } = await supabase.from('profiles').select('id').eq('id', session.user.id).single();
+      
+      if (error || !data) {
+          alert("⛔ Tài khoản của bạn đã bị xóa hoặc vô hiệu hóa. Bạn sẽ được đăng xuất.");
+          await supabase.auth.signOut();
+          router.push('/login');
+          return false; // Chặn hành động
+      }
+      return true; // Cho phép đi tiếp
+  }
+
+  // --- FETCHING ---
   const fetchDataByViewMode = async () => {
       let startStr = '', endStr = '';
       if (viewMode === 'day') { startStr = format(currentDate, 'yyyy-MM-dd'); endStr = startStr; } 
       else if (viewMode === 'week') { startStr = format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd'); endStr = format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd'); } 
       else if (viewMode === 'month') { startStr = format(startOfMonth(currentDate), 'yyyy-MM-dd'); endStr = format(endOfMonth(currentDate), 'yyyy-MM-dd'); } 
       else { startStr = format(startOfYear(currentDate), 'yyyy-MM-dd'); endStr = format(endOfYear(currentDate), 'yyyy-MM-dd'); }
+
       const { data } = await supabase.from('schedules').select('*').gte('date', startStr).lte('date', endStr).order('date', { ascending: true }).order('start_time', { ascending: true }); 
       if (data) setListSchedules(data);
   }
@@ -117,17 +150,22 @@ export default function AdminPage() {
       if (data) setAnnouncements(data);
   }
 
+  // --- ACTION HANDLERS (ĐÃ BẢO VỆ BẰNG verifyUserAlive) ---
+
   const handleAddAnnouncement = async () => {
+      if (!await verifyUserAlive()) return; // 🔒 Check Bảo Mật
       const { error } = await supabase.from('announcements').insert([{ content: 'Nội dung thông báo mới...' }]);
       if (error) alert("Lỗi: " + error.message); else loadAnnouncements();
   }
 
   const handleUpdateAnnouncement = async (id: number, content: string) => {
+      if (!await verifyUserAlive()) return; // 🔒 Check Bảo Mật
       const { error } = await supabase.from('announcements').update({ content }).eq('id', id);
       if (error) alert("Lỗi cập nhật: " + error.message); else alert("✅ Đã lưu thông báo!");
   }
 
   const handleDeleteAnnouncement = async (id: number) => {
+      if (!await verifyUserAlive()) return; // 🔒 Check Bảo Mật
       if(!confirm("Bạn chắc chắn muốn xóa thông báo này?")) return;
       const { error } = await supabase.from('announcements').delete().eq('id', id);
       if (error) alert("Lỗi xóa: " + error.message); else loadAnnouncements();
@@ -135,6 +173,8 @@ export default function AdminPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!await verifyUserAlive()) return; // 🔒 Check Bảo Mật
+
     if (!selectedDateForInput) { alert("Vui lòng chọn ngày!"); return; }
     if (!form.location) { alert("Vui lòng nhập địa điểm!"); return; }
     
@@ -143,37 +183,48 @@ export default function AdminPage() {
     if (!exists) { await supabase.from('locations').insert([{ name: form.location }]); loadLocations(); }
 
     const payload = { ...form, date: selectedDateForInput, last_updated_by: currentUser?.email };
+
     let error;
-    if (editingId) { const res = await supabase.from('schedules').update(payload).eq('id', editingId); error = res.error } 
-    else { const res = await supabase.from('schedules').insert([payload]); error = res.error }
+    if (editingId) {
+        const res = await supabase.from('schedules').update(payload).eq('id', editingId)
+        error = res.error
+    } else {
+        const res = await supabase.from('schedules').insert([payload])
+        error = res.error
+    }
     setLoading(false)
-    if (!error) { setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' })); setEditingId(null); fetchDataByViewMode() } 
-    else alert("Lỗi: " + error.message)
+    if (!error) {
+      setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' })) 
+      setEditingId(null)
+      fetchDataByViewMode()
+    } else alert("Lỗi: " + error.message)
   }
 
   const handleDelete = async (id: number) => {
+    if (!await verifyUserAlive()) return; // 🔒 Check Bảo Mật
     if(!confirm('Bạn có chắc muốn xóa lễ này không?')) return;
     await supabase.from('schedules').delete().eq('id', id)
     fetchDataByViewMode()
     if (editingId === id) { setEditingId(null); setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' })); }
   }
 
-  // --- 👇 UPDATE HÀM XÓA MEMBER (DÙNG SERVER ACTION) 👇 ---
+  // --- MEMBER ACTIONS ---
   const handleDeleteMember = async (id: string) => {
+      if (!await verifyUserAlive()) return; // 🔒 Check Bảo Mật
       if(!confirm('CẢNH BÁO: Xóa thành viên này sẽ ĐĂNG XUẤT họ ngay lập tức và xóa vĩnh viễn tài khoản. Bạn có chắc không?')) return;
       
-      // Gọi Server Action deleteMember thay vì gọi client
-      const result = await deleteMember(id);
+      const result = await deleteMember(id); // Server Action đã chuẩn rồi
 
       if (result.error) {
           alert(`❌ Thất bại: ${result.error}`);
       } else {
           alert(`✅ ${result.message}`);
-          loadMembers(); // Reload danh sách
+          loadMembers(); 
       }
   }
 
   const toggleRole = async (member: UserProfile) => {
+      if (!await verifyUserAlive()) return; // 🔒 Check Bảo Mật
       const newRole = member.role === 'super_admin' ? 'member' : 'super_admin';
       const actionName = newRole === 'super_admin' ? 'Thăng chức lên Admin' : 'Hạ xuống Member';
       if(!confirm(`Bạn muốn ${actionName} cho ${member.email}?`)) return;
@@ -184,32 +235,51 @@ export default function AdminPage() {
 
   const deleteLocation = async (id: number, e: React.MouseEvent) => {
       e.stopPropagation();
+      if (!await verifyUserAlive()) return; // 🔒 Check Bảo Mật
       if(!confirm('Xóa địa điểm này khỏi danh sách gợi ý?')) return;
       await supabase.from('locations').delete().eq('id', id); loadLocations();
   }
 
   const handleAddUser = async (e: React.FormEvent) => {
       e.preventDefault();
+      if (!await verifyUserAlive()) return; // 🔒 Check Bảo Mật
+      
       setIsCreatingUser(true); 
       try {
           const formData = new FormData();
           formData.append('email', newUser.email);
           formData.append('password', newUser.password);
+
           const result = await createNewMember(formData);
-          if (result.error) { alert(`❌ Thất bại: ${result.error}`); } 
-          else { alert(`✅ ${result.message}`); setNewUser({ email: '', password: '' }); setShowAddUserForm(false); loadMembers(); }
-      } catch (error) { console.error(error); alert("❌ Lỗi kết nối đến server."); } 
-      finally { setIsCreatingUser(false); }
+
+          if (result.error) {
+              alert(`❌ Thất bại: ${result.error}`);
+          } else {
+              alert(`✅ ${result.message}`);
+              setNewUser({ email: '', password: '' });
+              setShowAddUserForm(false);
+              loadMembers(); 
+          }
+      } catch (error) {
+          console.error(error);
+          alert("❌ Lỗi kết nối đến server.");
+      } finally {
+          setIsCreatingUser(false); 
+      }
   }
 
+  // --- HELPERS ---
   const prepareAddForDate = (dateStr: string) => {
-      setSelectedDateForInput(dateStr); setEditingId(null); setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' }));
+      setSelectedDateForInput(dateStr);
+      setEditingId(null);
+      setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' }));
       mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   const startEdit = (item: Schedule) => {
       setForm({ start_time: item.start_time.slice(0,5), title: item.title, priest_name: item.priest_name, note: item.note, location: item.location })
-      setSelectedDateForInput(item.date); setEditingId(item.id);
+      setSelectedDateForInput(item.date)
+      setEditingId(item.id)
       mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -225,7 +295,11 @@ export default function AdminPage() {
 
   const getListTitle = () => {
       if (viewMode === 'day') return format(currentDate, 'EEEE, dd/MM/yyyy', { locale: vi });
-      if (viewMode === 'week') { const start = startOfWeek(currentDate, { weekStartsOn: 1 }); const end = endOfWeek(currentDate, { weekStartsOn: 1 }); return `${format(start, 'dd/MM')} - ${format(end, 'dd/MM/yyyy')}`; }
+      if (viewMode === 'week') {
+          const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+          const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+          return `${format(start, 'dd/MM')} - ${format(end, 'dd/MM/yyyy')}`;
+      }
       if (viewMode === 'month') return `Tháng ${format(currentDate, 'MM/yyyy')}`;
       return `Năm ${format(currentDate, 'yyyy')}`;
   }
@@ -263,6 +337,7 @@ export default function AdminPage() {
       </div>
 
       <div className="max-w-[1600px] mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
         {/* --- CỘT TRÁI: FORM NHẬP LIỆU --- */}
         <div className="lg:col-span-3 h-fit">
             <div className={`border p-5 rounded-3xl backdrop-blur-md shadow-2xl transition-all ${editingId ? 'bg-blue-900/10 border-blue-500/50 ring-1 ring-blue-500/30' : 'bg-white/5 border-white/10'}`}>
@@ -270,6 +345,7 @@ export default function AdminPage() {
                     {editingId ? <><Edit className="text-blue-400" size={24}/> Chỉnh Sửa Lễ</> : <><Plus className="text-gold" size={24}/> Thêm Lễ Mới</>}
                 </h2>
                 <form onSubmit={handleSave} className="space-y-5">
+                    {/* INPUT: NGÀY */}
                     <div className="space-y-1.5 relative" ref={calRef}>
                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Ngày diễn ra</label>
                         <div onClick={() => setShowCalendar(!showCalendar)} className="w-full bg-black/40 border border-white/10 hover:border-white/30 rounded-xl p-3.5 text-white flex justify-between items-center cursor-pointer active:scale-95 transition group">
@@ -299,6 +375,7 @@ export default function AdminPage() {
                             </div>
                         )}
                     </div>
+                    {/* INPUT: GIỜ & TÊN */}
                     <div className="grid grid-cols-5 gap-3">
                         <div className="col-span-2 space-y-1.5 relative" ref={timeRef}>
                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Giờ</label>
@@ -317,6 +394,7 @@ export default function AdminPage() {
                              <input type="text" placeholder="Vd: Lễ Sáng" required className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-white placeholder-white/20 focus:border-gold outline-none transition font-medium" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
                         </div>
                     </div>
+                    {/* INPUT: ĐỊA ĐIỂM */}
                     <div className="space-y-1.5 relative" ref={locRef}>
                          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Địa điểm</label>
                          <div className="relative group">
@@ -335,6 +413,7 @@ export default function AdminPage() {
                             )}
                          </div>
                     </div>
+                    {/* INPUT: LINH MỤC */}
                     <div className="space-y-1.5">
                          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Linh mục (Tùy chọn)</label>
                          <input type="text" placeholder="Vd: Cha Giuse..." className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-white placeholder-white/20 focus:border-gold outline-none transition font-medium" value={form.priest_name} onChange={e => setForm({...form, priest_name: e.target.value})} />
@@ -357,6 +436,7 @@ export default function AdminPage() {
         {/* --- CỘT PHẢI: DASHBOARD --- */}
         <div className="lg:col-span-9">
              <div className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md overflow-hidden flex flex-col min-h-[600px] shadow-2xl">
+                {/* TOOLBAR */}
                 <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-black/20">
                     <div className="flex items-center gap-1 bg-black/40 p-1.5 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
                         {['day', 'week', 'month', 'year'].map((m) => (
@@ -373,7 +453,9 @@ export default function AdminPage() {
                     </div>
                 </div>
 
+                {/* CONTENT AREA */}
                 <div className="p-4 flex-grow bg-black/20 overflow-y-auto custom-scrollbar">
+                    {/* VIEW NĂM */}
                     {viewMode === 'year' && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                             {eachMonthOfInterval({ start: startOfYear(currentDate), end: endOfYear(currentDate) }).map(month => {
@@ -389,6 +471,7 @@ export default function AdminPage() {
                             })}
                         </div>
                     )}
+                    {/* VIEW THÁNG */}
                     {viewMode === 'month' && (
                         <div className="h-full flex flex-col">
                              <div className="grid grid-cols-7 gap-1 mb-2">
@@ -416,6 +499,7 @@ export default function AdminPage() {
                              </div>
                         </div>
                     )}
+                    {/* VIEW TUẦN */}
                     {viewMode === 'week' && (
                          <div className="space-y-6 pb-20">
                              {Array.from({length: 7}).map((_, i) => {
