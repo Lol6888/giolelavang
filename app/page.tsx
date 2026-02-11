@@ -16,7 +16,6 @@ export default function CinematicHome() {
   const [nextDaySchedule, setNextDaySchedule] = useState<Schedule | null>(null)
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState({ temp: 28, code: 0, desc: 'Đang tải...' })
-  const [marqueeText, setMarqueeText] = useState('🔔 Đang tải thông báo...') // <--- STATE MỚI CHO MARQUEE
   
   // Modal State
   const [showWeekModal, setShowWeekModal] = useState(false)
@@ -32,7 +31,6 @@ export default function CinematicHome() {
   // --- LOGIC ---
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t) }, [])
 
-  // 1. FETCH WEATHER
   useEffect(() => {
     async function fetchWeather() {
       try {
@@ -49,24 +47,6 @@ export default function CinematicHome() {
     fetchWeather(); setInterval(fetchWeather, 600000)
   }, [])
 
-  // 2. FETCH MARQUEE (DYNAMIC & REALTIME)
-  useEffect(() => {
-      const fetchMarquee = async () => {
-          // Lấy dữ liệu ban đầu
-          const { data } = await supabase.from('system_settings').select('value').eq('key', 'home_marquee').single();
-          if (data) setMarqueeText(data.value);
-      }
-      fetchMarquee();
-      
-      // Lắng nghe thay đổi (Realtime)
-      const ch = supabase.channel('marquee_upd').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_settings', filter: "key=eq.home_marquee" }, (payload) => {
-          if(payload.new && payload.new.value) setMarqueeText(payload.new.value);
-      }).subscribe();
-      
-      return () => { supabase.removeChannel(ch); }
-  }, [])
-
-  // 3. FETCH SCHEDULES
   const fetchSchedules = async () => {
     const todayStr = format(new Date(), 'yyyy-MM-dd')
     const tomorrowStr = format(addDays(new Date(), 1), 'yyyy-MM-dd')
@@ -214,16 +194,26 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - DYNAMIC DATA */}
+        {/* MARQUEE - FIXED SPACING (ĐÃ SỬA LỖI DÍNH NHAU) */}
         <div className="sticky top-0 z-[60] bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm py-2 px-4 border-b border-white/10 shrink-0">
-             <div className="marquee-container w-full group">
-                {/* KHỐI 1 */}
-                <div className="marquee-track flex items-center">
-                    <span className="mx-8">{marqueeText}</span>
+             <div className="marquee-container w-full flex overflow-hidden">
+                {/* TRACK 1 */}
+                <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee">
+                    <span>🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.</span>
+                    <span>🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.</span>
+                    <span>✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ.</span>
+                    <span>🔔 Đăng ký giờ Lễ: Văn phòng Trung Tâm (0329 981 798)</span>
+                    <span>🔔 Đăng ký Lưu trú: Nhà Hành Hương (0344 151 508)</span>
+                    <span>🔔 Đăng ký Ẩm Thực: Nhà khách Lâm Bích (0394 430 664)</span>
                 </div>
-                {/* KHỐI 2 (Để nối đuôi) */}
-                <div className="marquee-track flex items-center" aria-hidden="true">
-                    <span className="mx-8">{marqueeText}</span>
+                {/* TRACK 2 (DUPLICATE) */}
+                <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee" aria-hidden="true">
+                    <span>🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.</span>
+                    <span>🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.</span>
+                    <span>✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ.</span>
+                    <span>🔔 Đăng ký giờ Lễ: Văn phòng Trung Tâm (0329 981 798)</span>
+                    <span>🔔 Đăng ký Lưu trú: Nhà Hành Hương (0344 151 508)</span>
+                    <span>🔔 Đăng ký Ẩm Thực: Nhà khách Lâm Bích (0394 430 664)</span>
                 </div>
             </div>
         </div>
@@ -325,9 +315,9 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN (DANH SÁCH LỄ - STYLE ĐÃ CHỈNH) */}
+                {/* RIGHT COLUMN (DANH SÁCH LỄ - UPDATED GLASS EFFECT BG-BLACK/40) */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
-                    {/* CLASS: bg-black/40 backdrop-blur-md (Không bị tối quá) */}
+                    {/* CẬP NHẬT: Thay đổi class nền để khớp với cardStyle (bg-black/40) */}
                     <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
                         
                         {/* HEADER */}

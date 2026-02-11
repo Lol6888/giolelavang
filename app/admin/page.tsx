@@ -2,8 +2,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { createNewMember } from './actions' 
-import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock, Lock, Shield, Users, UserMinus, UserPlus, AlertCircle, CheckCircle, Megaphone, Save } from 'lucide-react' // <--- Thêm Megaphone, Save
+import { createNewMember } from './actions' // <--- IMPORT QUAN TRỌNG
+import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock, Lock, Shield, Users, UserMinus, UserPlus, AlertCircle, CheckCircle, Megaphone, Save } from 'lucide-react'
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isBefore, startOfYear, endOfYear, eachMonthOfInterval, addYears, subYears } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
@@ -11,6 +11,7 @@ import { vi } from 'date-fns/locale'
 type Schedule = { id: number; date: string; start_time: string; title: string; priest_name: string; note: string; location: string; last_updated_by?: string }
 type LocationItem = { id: number; name: string }
 type UserProfile = { id: string; email: string; role: 'member' | 'super_admin'; created_at: string }
+type Announcement = { id: number; content: string; is_active: boolean; created_at: string } // Type mới cho thông báo
 type ViewMode = 'day' | 'week' | 'month' | 'year'
 
 export default function AdminPage() {
@@ -22,10 +23,7 @@ export default function AdminPage() {
   const [listSchedules, setListSchedules] = useState<Schedule[]>([])
   const [locations, setLocations] = useState<LocationItem[]>([])
   const [members, setMembers] = useState<UserProfile[]>([])
-  
-  // MARQUEE STATE (NEW)
-  const [marqueeText, setMarqueeText] = useState('')
-  const [loadingMarquee, setLoadingMarquee] = useState(false)
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]) // State mới cho thông báo
   
   // UI STATES
   const [viewMode, setViewMode] = useState<ViewMode>('day') 
@@ -33,7 +31,7 @@ export default function AdminPage() {
   
   // MODAL STATES
   const [showMemberModal, setShowMemberModal] = useState(false)
-  const [showMarqueeModal, setShowMarqueeModal] = useState(false) // <--- Modal mới cho Marquee
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false) // State modal thông báo
   const [showAddUserForm, setShowAddUserForm] = useState(false) 
   const [isCreatingUser, setIsCreatingUser] = useState(false) 
   
@@ -120,24 +118,29 @@ export default function AdminPage() {
       if (data) setMembers(data as UserProfile[]);
   }
 
-  // --- NEW: LOAD & SAVE MARQUEE ---
-  const loadMarquee = async () => {
-      if (currentUser?.role !== 'super_admin') return;
-      setLoadingMarquee(true);
-      const { data } = await supabase.from('system_settings').select('value').eq('key', 'home_marquee').single();
-      if (data) setMarqueeText(data.value);
-      setLoadingMarquee(false);
+  // --- NEW: ANNOUNCEMENT LOGIC ---
+  const loadAnnouncements = async () => {
+      const { data } = await supabase.from('announcements').select('*').order('id', { ascending: true });
+      if (data) setAnnouncements(data);
   }
 
-  const saveMarquee = async () => {
-      setLoadingMarquee(true);
-      const { error } = await supabase.from('system_settings').update({ value: marqueeText, updated_by: currentUser?.email }).eq('key', 'home_marquee');
-      setLoadingMarquee(false);
-      if (error) alert("Lỗi lưu: " + error.message);
-      else {
-          alert("Đã cập nhật dòng chữ chạy thành công!");
-          setShowMarqueeModal(false);
-      }
+  const handleAddAnnouncement = async () => {
+      const { error } = await supabase.from('announcements').insert([{ content: 'Nội dung thông báo mới...' }]);
+      if (error) alert("Lỗi: " + error.message);
+      else loadAnnouncements();
+  }
+
+  const handleUpdateAnnouncement = async (id: number, content: string) => {
+      const { error } = await supabase.from('announcements').update({ content }).eq('id', id);
+      if (error) alert("Lỗi cập nhật: " + error.message);
+      else alert("✅ Đã lưu thông báo!");
+  }
+
+  const handleDeleteAnnouncement = async (id: number) => {
+      if(!confirm("Bạn chắc chắn muốn xóa thông báo này?")) return;
+      const { error } = await supabase.from('announcements').delete().eq('id', id);
+      if (error) alert("Lỗi xóa: " + error.message);
+      else loadAnnouncements();
   }
 
   // --- SCHEDULE ACTIONS ---
@@ -200,9 +203,10 @@ export default function AdminPage() {
   // --- HANDLE ADD USER (CHÍNH THỨC) ---
   const handleAddUser = async (e: React.FormEvent) => {
       e.preventDefault();
-      setIsCreatingUser(true); 
+      setIsCreatingUser(true); // Bật loading
 
       try {
+          // Gọi Server Action
           const formData = new FormData();
           formData.append('email', newUser.email);
           formData.append('password', newUser.password);
@@ -215,13 +219,13 @@ export default function AdminPage() {
               alert(`✅ ${result.message}`);
               setNewUser({ email: '', password: '' });
               setShowAddUserForm(false);
-              loadMembers(); 
+              loadMembers(); // Reload danh sách ngay
           }
       } catch (error) {
           console.error(error);
           alert("❌ Lỗi kết nối đến server.");
       } finally {
-          setIsCreatingUser(false); 
+          setIsCreatingUser(false); // Tắt loading
       }
   }
 
@@ -261,6 +265,7 @@ export default function AdminPage() {
       return `Năm ${format(currentDate, 'yyyy')}`;
   }
 
+  // --- CONFIG TIME ---
   const HOURS = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0'));
   const MINUTES = Array.from({length: 12}, (_, i) => (i * 5).toString().padStart(2, '0'));
 
@@ -279,13 +284,13 @@ export default function AdminPage() {
             <div className="flex items-center gap-2">
                 {currentUser?.role === 'super_admin' && (
                     <>
-                        {/* NÚT CẤU HÌNH MARQUEE (MỚI) */}
-                        <button onClick={() => { setShowMarqueeModal(true); loadMarquee(); }} className="flex items-center gap-2 text-xs font-bold text-purple-400 bg-purple-900/20 px-4 py-2.5 rounded-xl hover:bg-purple-900/30 transition active:scale-95 border border-purple-500/30">
-                            <Megaphone size={16}/> <span className="hidden sm:inline">Cấu hình TB</span>
+                        {/* NÚT QUẢN LÝ THÔNG BÁO (MỚI) */}
+                        <button onClick={() => { setShowAnnouncementModal(true); loadAnnouncements(); }} className="flex items-center gap-2 text-xs font-bold text-yellow-400 bg-yellow-900/20 px-4 py-2.5 rounded-xl hover:bg-yellow-900/30 transition active:scale-95 border border-yellow-500/30">
+                            <Megaphone size={16}/> <span className="hidden sm:inline">Thông báo</span>
                         </button>
 
                         <button onClick={() => { setShowMemberModal(true); loadMembers(); }} className="flex items-center gap-2 text-xs font-bold text-blue-400 bg-blue-900/20 px-4 py-2.5 rounded-xl hover:bg-blue-900/30 transition active:scale-95 border border-blue-500/30">
-                            <Users size={16}/> <span className="hidden sm:inline">Quản Lý Member</span>
+                            <Users size={16}/> <span className="hidden sm:inline">Thành Viên</span>
                         </button>
                     </>
                 )}
@@ -343,12 +348,8 @@ export default function AdminPage() {
                              </div>
                              {showTimePicker && (
                                 <div className="absolute top-full left-0 mt-2 w-[280px] bg-slate-900 border border-white/20 rounded-2xl shadow-2xl p-4 z-[100] grid grid-cols-2 gap-2">
-                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-1 space-y-1">
-                                        {HOURS.map(h => (<button key={h} type="button" onClick={() => setForm(prev => ({...prev, start_time: `${h}:${prev.start_time.split(':')[1]}`}))} className={`w-full py-2 rounded-lg text-sm font-bold transition font-mono ${form.start_time.startsWith(h) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{h}</button>))}
-                                    </div>
-                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-1 space-y-1">
-                                        {MINUTES.map(m => (<button key={m} type="button" onClick={() => { setForm(prev => ({...prev, start_time: `${prev.start_time.split(':')[0]}:${m}`})); setShowTimePicker(false); }} className={`w-full py-2 rounded-lg text-sm font-bold transition font-mono ${form.start_time.endsWith(m) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{m}</button>))}
-                                    </div>
+                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-1 space-y-1">{HOURS.map(h => (<button key={h} type="button" onClick={() => setForm(prev => ({...prev, start_time: `${h}:${prev.start_time.split(':')[1]}`}))} className={`w-full py-2 rounded-lg text-sm font-bold transition font-mono ${form.start_time.startsWith(h) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{h}</button>))}</div>
+                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-1 space-y-1">{MINUTES.map(m => (<button key={m} type="button" onClick={() => { setForm(prev => ({...prev, start_time: `${prev.start_time.split(':')[0]}:${m}`})); setShowTimePicker(false); }} className={`w-full py-2 rounded-lg text-sm font-bold transition font-mono ${form.start_time.endsWith(m) ? 'bg-gold text-black' : 'text-slate-400 bg-white/5 hover:bg-white/10'}`}>{m}</button>))}</div>
                                 </div>
                              )}
                         </div>
@@ -418,7 +419,6 @@ export default function AdminPage() {
 
                 {/* CONTENT AREA */}
                 <div className="p-4 flex-grow bg-black/20 overflow-y-auto custom-scrollbar">
-                    {/* VIEW NĂM */}
                     {viewMode === 'year' && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                             {eachMonthOfInterval({ start: startOfYear(currentDate), end: endOfYear(currentDate) }).map(month => {
@@ -434,7 +434,6 @@ export default function AdminPage() {
                             })}
                         </div>
                     )}
-                    {/* VIEW THÁNG */}
                     {viewMode === 'month' && (
                         <div className="h-full flex flex-col">
                              <div className="grid grid-cols-7 gap-1 mb-2">
@@ -462,7 +461,6 @@ export default function AdminPage() {
                              </div>
                         </div>
                     )}
-                    {/* VIEW TUẦN */}
                     {viewMode === 'week' && (
                          <div className="space-y-6 pb-20">
                              {Array.from({length: 7}).map((_, i) => {
@@ -610,7 +608,7 @@ export default function AdminPage() {
                                           : <div className="px-3 py-1.5 rounded-lg bg-slate-700/50 text-slate-400 border border-white/5 text-xs font-bold whitespace-nowrap">Đang là Member</div>
                                       }
 
-                                      {/* CÁC NÚT THAO TÁC */}
+                                      {/* CÁC NÚT THAO TÁC RÕ RÀNG (KHÔNG DÙNG ICON KHÓ HIỂU) */}
                                       {mem.email !== currentUser?.email && (
                                           <>
                                               <div className="w-px h-8 bg-white/10 mx-2"></div>
@@ -639,28 +637,47 @@ export default function AdminPage() {
           </div>
       )}
 
-      {/* MARQUEE MODAL (NEW) */}
-      {showMarqueeModal && (
+      {/* ANNOUNCEMENT MANAGEMENT MODAL (CHỈ HIỆN VỚI SUPER ADMIN) */}
+      {showAnnouncementModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-              <div className="bg-[#1a1a24] border border-white/20 rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl">
+              <div className="bg-[#1a1a24] border border-white/20 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+                  {/* MODAL HEADER */}
                   <div className="p-5 border-b border-white/10 flex justify-between items-center bg-white/5 rounded-t-2xl">
-                      <h2 className="text-xl font-bold text-white flex items-center gap-2"><Megaphone className="text-purple-400"/> Cấu hình Thông báo (Marquee)</h2>
-                      <button onClick={() => setShowMarqueeModal(false)} className="p-2 hover:bg-white/10 rounded-full transition"><X/></button>
-                  </div>
-                  <div className="p-6">
-                      <p className="text-sm text-slate-400 mb-4">Nội dung này sẽ chạy ở thanh thông báo trên đầu trang chủ.</p>
-                      {loadingMarquee ? <div className="text-center py-4"><Loader2 className="animate-spin mx-auto text-purple-400"/></div> :
-                      <div className="space-y-4">
-                          <textarea 
-                              className="w-full h-32 bg-black/40 border border-white/10 rounded-xl p-4 text-white placeholder-white/20 focus:border-purple-500 outline-none transition font-medium"
-                              placeholder="Nhập nội dung thông báo..."
-                              value={marqueeText}
-                              onChange={(e) => setMarqueeText(e.target.value)}
-                          ></textarea>
-                          <button onClick={saveMarquee} disabled={loadingMarquee} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition shadow-lg flex justify-center items-center gap-2">
-                              <Save size={20}/> Lưu Thay Đổi
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2"><Megaphone className="text-yellow-400"/> Quản lý Thông báo Marquee</h2>
+                      <div className="flex gap-2">
+                          <button onClick={handleAddAnnouncement} className="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white shadow-lg transition">
+                              <Plus size={18}/> Thêm thông báo mới
                           </button>
-                      </div>}
+                          <button onClick={() => setShowAnnouncementModal(false)} className="p-2 hover:bg-white/10 rounded-full transition"><X/></button>
+                      </div>
+                  </div>
+
+                  {/* CONTENT */}
+                  <div className="overflow-y-auto p-5 custom-scrollbar flex-grow space-y-4">
+                      {announcements.length === 0 && <p className="text-center text-slate-500 italic py-10">Chưa có thông báo nào. Hãy thêm mới!</p>}
+                      {announcements.map(ann => (
+                          <div key={ann.id} className="bg-black/40 border border-white/10 p-4 rounded-xl flex gap-4 items-start group hover:border-white/20 transition">
+                              <div className="flex-grow">
+                                  <label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Nội dung hiển thị</label>
+                                  <textarea 
+                                    className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-yellow-500 outline-none text-sm min-h-[80px]"
+                                    value={ann.content}
+                                    onChange={(e) => {
+                                        const newContent = e.target.value;
+                                        setAnnouncements(prev => prev.map(p => p.id === ann.id ? { ...p, content: newContent } : p));
+                                    }}
+                                  />
+                              </div>
+                              <div className="flex flex-col gap-2 pt-6">
+                                  <button onClick={() => handleUpdateAnnouncement(ann.id, ann.content)} className="p-2 bg-blue-900/30 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg transition" title="Lưu thay đổi">
+                                      <Save size={20}/>
+                                  </button>
+                                  <button onClick={() => handleDeleteAnnouncement(ann.id)} className="p-2 bg-red-900/30 text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition" title="Xóa">
+                                      <Trash2 size={20}/>
+                                  </button>
+                              </div>
+                          </div>
+                      ))}
                   </div>
               </div>
           </div>
