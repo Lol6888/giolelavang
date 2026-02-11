@@ -3,7 +3,8 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { format, parseISO, addDays, isSameDay, differenceInSeconds } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { Clock, MapPin, Calendar, Sun, CloudRain, X, Loader2, User, PlayCircle } from 'lucide-react'
+// 👇 ĐÃ THÊM: Globe, ChevronDown
+import { Clock, MapPin, Calendar, Sun, CloudRain, X, Loader2, User, PlayCircle, Globe, ChevronDown } from 'lucide-react'
 
 // --- TYPES ---
 type Schedule = {
@@ -22,18 +23,54 @@ export default function CinematicHome() {
       "🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.",
       "🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.",
       "✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ."
-  ]) // Mặc định hiển thị khi chưa tải xong
+  ]) 
 
   // Modal State
   const [showWeekModal, setShowWeekModal] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [loadingWeek, setLoadingWeek] = useState(false)
   
+  // State cho Language Dropdown
+  const [showLangMenu, setShowLangMenu] = useState(false)
+  
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // --- CONFIG ---
-  const MASS_DURATION_MINUTES = 30; // Thời lượng lễ mặc định: 30 phút
-  const COUNTDOWN_THRESHOLD_MINUTES = 15; // Bắt đầu đếm ngược khi còn: 15 phút
+  const MASS_DURATION_MINUTES = 30; 
+  const COUNTDOWN_THRESHOLD_MINUTES = 15; 
+
+  // --- GOOGLE TRANSLATE SETUP ---
+  useEffect(() => {
+    // 1. Tạo script tag
+    const addScript = document.createElement('script');
+    addScript.setAttribute('src', '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit');
+    document.body.appendChild(addScript);
+
+    // 2. Khởi tạo hàm init toàn cục
+    // @ts-ignore
+    window.googleTranslateElementInit = () => {
+        // @ts-ignore
+        new window.google.translate.TranslateElement({
+            pageLanguage: 'vi',
+            // Chỉ định các ngôn ngữ cần dùng: Tiếng Việt, Anh, Hàn, Pháp
+            includedLanguages: 'vi,en,ko,fr', 
+            autoDisplay: false,
+        }, 'google_translate_element');
+    };
+  }, []);
+
+  // Hàm chuyển đổi ngôn ngữ bằng Cookie và Reload
+  const changeLanguage = (langCode: string) => {
+      // Định dạng cookie của Google: /ngôn_ngữ_gốc/ngôn_ngữ_đích
+      const cookieValue = `/vi/${langCode}`;
+      
+      // Set cookie cho Google Translate
+      document.cookie = `googtrans=${cookieValue}; path=/; domain=${window.location.hostname}`;
+      document.cookie = `googtrans=${cookieValue}; path=/;`; // Fallback cho localhost
+
+      // Reload để áp dụng
+      window.location.reload();
+  }
 
   // --- LOGIC ---
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t) }, [])
@@ -60,11 +97,9 @@ export default function CinematicHome() {
     const todayStr = format(new Date(), 'yyyy-MM-dd')
     const tomorrowStr = format(addDays(new Date(), 1), 'yyyy-MM-dd')
 
-    // 1. Lấy lịch hôm nay
     const { data: todayData } = await supabase.from('schedules').select('*').eq('date', todayStr).order('start_time')
     if (todayData) setSchedules(todayData)
 
-    // 2. Lấy lễ sớm nhất của ngày mai
     const { data: tomorrowData } = await supabase.from('schedules').select('*').eq('date', tomorrowStr).order('start_time').limit(1).single()
     if (tomorrowData) setNextDaySchedule(tomorrowData)
   }
@@ -88,14 +123,14 @@ export default function CinematicHome() {
   // Realtime Subscription
   useEffect(() => {
     fetchSchedules()
-    fetchAnnouncements() // Tải thông báo ngay khi vào trang
+    fetchAnnouncements() 
 
     const ch = supabase.channel('home')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, () => {
         fetchSchedules(); if(showWeekModal) fetchWeekSchedules();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
-        fetchAnnouncements(); // Tự cập nhật thông báo khi Admin sửa
+        fetchAnnouncements();
     })
     .subscribe()
 
@@ -188,9 +223,9 @@ export default function CinematicHome() {
 
   // --- NEW LOGIC: BACKGROUND FILTER ---
   const getBgFilter = () => {
-      if (weather.code >= 51) return 'none'; // Mưa: Giữ nguyên màu gốc
-      if (weather.code <= 3) return 'brightness(1.05) saturate(1.1)'; // Nắng: Tăng sáng và rực màu
-      return 'brightness(1.1) saturate(1.2)'; // Mây: Sáng và rực rỡ hơn
+      if (weather.code >= 51) return 'none'; 
+      if (weather.code <= 3) return 'brightness(1.05) saturate(1.1)'; 
+      return 'brightness(1.1) saturate(1.2)'; 
   }
 
   // CSS CLASSES
@@ -200,7 +235,21 @@ export default function CinematicHome() {
 
   return (
     <div className="relative h-screen font-sans text-slate-100 overflow-hidden flex flex-col">
-        {/* BACKGROUND - UPDATED FILTER LOGIC */}
+        
+        {/* CSS ĐỂ ẨN THANH GOOGLE GỐC (QUAN TRỌNG) */}
+        <style jsx global>{`
+            .goog-te-banner-frame { display: none !important; }
+            body { top: 0px !important; }
+            .goog-tooltip { display: none !important; }
+            .goog-tooltip:hover { display: none !important; }
+            .goog-text-highlight { background-color: transparent !important; border: none !important; box-shadow: none !important; }
+            #google_translate_element { display: none; } /* Ẩn widget gốc */
+        `}</style>
+
+        {/* ELEMENT ẨN ĐỂ GOOGLE SCRIPT HOẠT ĐỘNG */}
+        <div id="google_translate_element"></div>
+
+        {/* BACKGROUND */}
         <div 
             className="absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000"
             style={{ filter: getBgFilter() }}
@@ -219,20 +268,14 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - DYNAMIC DATA FROM DB */}
+        {/* MARQUEE */}
         <div className="sticky top-0 z-[60] bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm py-2 px-4 border-b border-white/10 shrink-0">
              <div className="marquee-container w-full flex overflow-hidden">
-                {/* TRACK 1 (Data động) */}
                 <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee">
-                    {marqueeList.map((text, i) => (
-                        <span key={`t1-${i}`}>{text}</span>
-                    ))}
+                    {marqueeList.map((text, i) => <span key={`t1-${i}`}>{text}</span>)}
                 </div>
-                {/* TRACK 2 (Duplicate để loop - Data động) */}
                 <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee" aria-hidden="true">
-                    {marqueeList.map((text, i) => (
-                        <span key={`t2-${i}`}>{text}</span>
-                    ))}
+                    {marqueeList.map((text, i) => <span key={`t2-${i}`}>{text}</span>)}
                 </div>
             </div>
         </div>
@@ -267,7 +310,7 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 2. COUNTDOWN (ĐÃ GIẢM SIZE 50%) */}
+                        {/* 2. COUNTDOWN */}
                         {status.type === 'countdown' && status.item && (
                             <div className={`${cardStyle} border-gold/30`}>
                                 <div className="bg-gold text-marian-dark font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded inline-block mb-2 sm:mb-3 uppercase tracking-widest shadow-lg">Sắp diễn ra</div>
@@ -334,9 +377,42 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN (DANH SÁCH LỄ - UPDATED BG STYLE TO MATCH CARD) */}
-                <div className="lg:col-span-5 h-auto flex flex-col order-2">
-                    {/* CẬP NHẬT: Thay bg-black/60 thành bg-black/40 và blur-xl thành blur-md */}
+                {/* RIGHT COLUMN (DANH SÁCH LỄ) */}
+                <div className="lg:col-span-5 h-auto flex flex-col order-2 relative">
+                    
+                    {/* 👇 NÚT DỊCH NGÔN NGỮ (NẰM PHÍA TRÊN CARD) 👇 */}
+                    <div className="flex justify-end mb-2 relative z-50">
+                        <div className="relative">
+                            <button 
+                                onClick={() => setShowLangMenu(!showLangMenu)} 
+                                className="flex items-center gap-2 bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 text-white text-xs font-bold px-3 py-1.5 rounded-full transition shadow-lg active:scale-95"
+                            >
+                                <Globe size={14} className="text-gold"/>
+                                <span>Ngôn ngữ / Language</span>
+                                <ChevronDown size={14} className={`transition-transform duration-200 ${showLangMenu ? 'rotate-180' : ''}`}/>
+                            </button>
+                            
+                            {showLangMenu && (
+                                <div className="absolute right-0 top-full mt-2 w-40 bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl overflow-hidden animate-fade-in flex flex-col z-[100]">
+                                    {[
+                                        { code: 'vi', label: '🇻🇳 Tiếng Việt' },
+                                        { code: 'en', label: '🇺🇸 English' },
+                                        { code: 'ko', label: '🇰🇷 한국어' },
+                                        { code: 'fr', label: '🇫🇷 Français' },
+                                    ].map(lang => (
+                                        <button 
+                                            key={lang.code}
+                                            onClick={() => changeLanguage(lang.code)}
+                                            className="px-4 py-3 text-left text-sm text-white hover:bg-white/10 hover:text-gold transition font-medium border-b border-white/5 last:border-0"
+                                        >
+                                            {lang.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
                         
                         {/* HEADER */}
