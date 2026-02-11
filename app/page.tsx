@@ -419,7 +419,7 @@ export default function CinematicHome() {
                     <div className="flex justify-between items-center p-4 sm:p-6 border-b border-white/10 bg-white/5 rounded-t-2xl sm:rounded-t-3xl">
                         <div>
                             <h2 className="font-serif text-xl sm:text-3xl font-bold text-white text-shadow">Lịch Thánh Lễ trong 7 ngày tới</h2>
-                            <p className="text-white/60 text-xs sm:text-sm mt-1">Chi tiết các Thánh Lễ trong 7 ngày tới</p>
+                            <p className="text-white/60 text-xs sm:text-sm mt-1">Chi tiết các Thánh Lễ</p>
                         </div>
                         <button onClick={() => setShowWeekModal(false)} className="p-2 bg-white/10 hover:bg-red-600/80 rounded-full transition group active:scale-90">
                             <X className="text-white" size={24}/>
