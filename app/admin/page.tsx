@@ -2,59 +2,46 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { createNewMember } from './actions' // <--- IMPORT QUAN TRỌNG
+// 👇 IMPORT THÊM deleteMember
+import { createNewMember, deleteMember } from './actions' 
 import { LogOut, Plus, Trash2, Calendar as CalIcon, Loader2, User, ChevronLeft, ChevronRight, MapPin, X, LayoutList, Grid3X3, List, Edit, CalendarRange, Clock, Lock, Shield, Users, UserMinus, UserPlus, AlertCircle, CheckCircle, Megaphone, Save } from 'lucide-react'
 import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek, addMonths, subMonths, addDays, subDays, isBefore, startOfYear, endOfYear, eachMonthOfInterval, addYears, subYears } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
-// --- TYPES ---
+// ... (Giữ nguyên các TYPE và STATE cũ) ...
 type Schedule = { id: number; date: string; start_time: string; title: string; priest_name: string; note: string; location: string; last_updated_by?: string }
 type LocationItem = { id: number; name: string }
 type UserProfile = { id: string; email: string; role: 'member' | 'super_admin'; created_at: string }
-type Announcement = { id: number; content: string; is_active: boolean; created_at: string } // Type mới cho thông báo
+type Announcement = { id: number; content: string; is_active: boolean; created_at: string }
 type ViewMode = 'day' | 'week' | 'month' | 'year'
 
 export default function AdminPage() {
+  // ... (Giữ nguyên phần Init và Fetch Data cũ) ...
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [currentUser, setCurrentUser] = useState<{ email: string, role: string } | null>(null)
-  
-  // DATA STATES
   const [listSchedules, setListSchedules] = useState<Schedule[]>([])
   const [locations, setLocations] = useState<LocationItem[]>([])
   const [members, setMembers] = useState<UserProfile[]>([])
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]) // State mới cho thông báo
-  
-  // UI STATES
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]) 
   const [viewMode, setViewMode] = useState<ViewMode>('day') 
   const [currentDate, setCurrentDate] = useState(new Date()) 
-  
-  // MODAL STATES
   const [showMemberModal, setShowMemberModal] = useState(false)
-  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false) // State modal thông báo
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
   const [showAddUserForm, setShowAddUserForm] = useState(false) 
   const [isCreatingUser, setIsCreatingUser] = useState(false) 
-  
-  // POPUP STATES
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)
   const [showLocPicker, setShowLocPicker] = useState(false)
-  
-  // FORM STATES
   const [selectedDateForInput, setSelectedDateForInput] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [form, setForm] = useState({ start_time: '05:00', title: '', priest_name: '', note: '', location: '' })
   const [editingId, setEditingId] = useState<number | null>(null)
-  
-  // NEW USER FORM STATE
   const [newUser, setNewUser] = useState({ email: '', password: '' })
-
-  // REFS
   const calRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
   const locRef = useRef<HTMLDivElement>(null)
   const mainContainerRef = useRef<HTMLDivElement>(null)
 
-  // --- INIT ---
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (calRef.current && !calRef.current.contains(event.target as Node)) setShowCalendar(false)
@@ -65,27 +52,13 @@ export default function AdminPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // CHECK AUTH & LOAD DATA
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session }, error: authError } = await supabase.auth.getSession()
-      if (authError || !session) { 
-          router.push('/login'); 
-          return; 
-      }
+      if (authError || !session) { router.push('/login'); return; }
       
-      const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-      if (profileError) {
-          console.error("Lỗi profile:", profileError);
-          setCurrentUser({ email: session.user.email!, role: 'member' });
-      } else {
-          setCurrentUser({ email: session.user.email!, role: profile?.role || 'member' });
-      }
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      setCurrentUser({ email: session.user.email!, role: profile?.role || 'member' });
 
       fetchDataByViewMode()
       loadLocations()
@@ -94,14 +67,12 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, currentDate, router]) 
 
-  // --- FETCHING ---
   const fetchDataByViewMode = async () => {
       let startStr = '', endStr = '';
       if (viewMode === 'day') { startStr = format(currentDate, 'yyyy-MM-dd'); endStr = startStr; } 
       else if (viewMode === 'week') { startStr = format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd'); endStr = format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'yyyy-MM-dd'); } 
       else if (viewMode === 'month') { startStr = format(startOfMonth(currentDate), 'yyyy-MM-dd'); endStr = format(endOfMonth(currentDate), 'yyyy-MM-dd'); } 
       else { startStr = format(startOfYear(currentDate), 'yyyy-MM-dd'); endStr = format(endOfYear(currentDate), 'yyyy-MM-dd'); }
-
       const { data } = await supabase.from('schedules').select('*').gte('date', startStr).lte('date', endStr).order('date', { ascending: true }).order('start_time', { ascending: true }); 
       if (data) setListSchedules(data);
   }
@@ -118,7 +89,6 @@ export default function AdminPage() {
       if (data) setMembers(data as UserProfile[]);
   }
 
-  // --- NEW: ANNOUNCEMENT LOGIC ---
   const loadAnnouncements = async () => {
       const { data } = await supabase.from('announcements').select('*').order('id', { ascending: true });
       if (data) setAnnouncements(data);
@@ -126,24 +96,20 @@ export default function AdminPage() {
 
   const handleAddAnnouncement = async () => {
       const { error } = await supabase.from('announcements').insert([{ content: 'Nội dung thông báo mới...' }]);
-      if (error) alert("Lỗi: " + error.message);
-      else loadAnnouncements();
+      if (error) alert("Lỗi: " + error.message); else loadAnnouncements();
   }
 
   const handleUpdateAnnouncement = async (id: number, content: string) => {
       const { error } = await supabase.from('announcements').update({ content }).eq('id', id);
-      if (error) alert("Lỗi cập nhật: " + error.message);
-      else alert("✅ Đã lưu thông báo!");
+      if (error) alert("Lỗi cập nhật: " + error.message); else alert("✅ Đã lưu thông báo!");
   }
 
   const handleDeleteAnnouncement = async (id: number) => {
       if(!confirm("Bạn chắc chắn muốn xóa thông báo này?")) return;
       const { error } = await supabase.from('announcements').delete().eq('id', id);
-      if (error) alert("Lỗi xóa: " + error.message);
-      else loadAnnouncements();
+      if (error) alert("Lỗi xóa: " + error.message); else loadAnnouncements();
   }
 
-  // --- SCHEDULE ACTIONS ---
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedDateForInput) { alert("Vui lòng chọn ngày!"); return; }
@@ -154,21 +120,12 @@ export default function AdminPage() {
     if (!exists) { await supabase.from('locations').insert([{ name: form.location }]); loadLocations(); }
 
     const payload = { ...form, date: selectedDateForInput, last_updated_by: currentUser?.email };
-
     let error;
-    if (editingId) {
-        const res = await supabase.from('schedules').update(payload).eq('id', editingId)
-        error = res.error
-    } else {
-        const res = await supabase.from('schedules').insert([payload])
-        error = res.error
-    }
+    if (editingId) { const res = await supabase.from('schedules').update(payload).eq('id', editingId); error = res.error } 
+    else { const res = await supabase.from('schedules').insert([payload]); error = res.error }
     setLoading(false)
-    if (!error) {
-      setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' })) 
-      setEditingId(null)
-      fetchDataByViewMode()
-    } else alert("Lỗi: " + error.message)
+    if (!error) { setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' })); setEditingId(null); fetchDataByViewMode() } 
+    else alert("Lỗi: " + error.message)
   }
 
   const handleDelete = async (id: number) => {
@@ -178,11 +135,19 @@ export default function AdminPage() {
     if (editingId === id) { setEditingId(null); setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' })); }
   }
 
-  // --- MEMBER ACTIONS (SUPER ADMIN ONLY) ---
+  // --- 👇 UPDATE HÀM XÓA MEMBER (DÙNG SERVER ACTION) 👇 ---
   const handleDeleteMember = async (id: string) => {
-      if(!confirm('Xóa thành viên này? Họ sẽ mất quyền truy cập.')) return;
-      await supabase.from('profiles').delete().eq('id', id);
-      loadMembers();
+      if(!confirm('CẢNH BÁO: Xóa thành viên này sẽ ĐĂNG XUẤT họ ngay lập tức và xóa vĩnh viễn tài khoản. Bạn có chắc không?')) return;
+      
+      // Gọi Server Action deleteMember thay vì gọi client
+      const result = await deleteMember(id);
+
+      if (result.error) {
+          alert(`❌ Thất bại: ${result.error}`);
+      } else {
+          alert(`✅ ${result.message}`);
+          loadMembers(); // Reload danh sách
+      }
   }
 
   const toggleRole = async (member: UserProfile) => {
@@ -200,47 +165,28 @@ export default function AdminPage() {
       await supabase.from('locations').delete().eq('id', id); loadLocations();
   }
 
-  // --- HANDLE ADD USER (CHÍNH THỨC) ---
   const handleAddUser = async (e: React.FormEvent) => {
       e.preventDefault();
-      setIsCreatingUser(true); // Bật loading
-
+      setIsCreatingUser(true); 
       try {
-          // Gọi Server Action
           const formData = new FormData();
           formData.append('email', newUser.email);
           formData.append('password', newUser.password);
-
           const result = await createNewMember(formData);
-
-          if (result.error) {
-              alert(`❌ Thất bại: ${result.error}`);
-          } else {
-              alert(`✅ ${result.message}`);
-              setNewUser({ email: '', password: '' });
-              setShowAddUserForm(false);
-              loadMembers(); // Reload danh sách ngay
-          }
-      } catch (error) {
-          console.error(error);
-          alert("❌ Lỗi kết nối đến server.");
-      } finally {
-          setIsCreatingUser(false); // Tắt loading
-      }
+          if (result.error) { alert(`❌ Thất bại: ${result.error}`); } 
+          else { alert(`✅ ${result.message}`); setNewUser({ email: '', password: '' }); setShowAddUserForm(false); loadMembers(); }
+      } catch (error) { console.error(error); alert("❌ Lỗi kết nối đến server."); } 
+      finally { setIsCreatingUser(false); }
   }
 
-  // --- HELPERS ---
   const prepareAddForDate = (dateStr: string) => {
-      setSelectedDateForInput(dateStr);
-      setEditingId(null);
-      setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' }));
+      setSelectedDateForInput(dateStr); setEditingId(null); setForm(prev => ({ ...prev, title: '', priest_name: '', note: '' }));
       mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   const startEdit = (item: Schedule) => {
       setForm({ start_time: item.start_time.slice(0,5), title: item.title, priest_name: item.priest_name, note: item.note, location: item.location })
-      setSelectedDateForInput(item.date)
-      setEditingId(item.id)
+      setSelectedDateForInput(item.date); setEditingId(item.id);
       mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -256,16 +202,11 @@ export default function AdminPage() {
 
   const getListTitle = () => {
       if (viewMode === 'day') return format(currentDate, 'EEEE, dd/MM/yyyy', { locale: vi });
-      if (viewMode === 'week') {
-          const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-          const end = endOfWeek(currentDate, { weekStartsOn: 1 });
-          return `${format(start, 'dd/MM')} - ${format(end, 'dd/MM/yyyy')}`;
-      }
+      if (viewMode === 'week') { const start = startOfWeek(currentDate, { weekStartsOn: 1 }); const end = endOfWeek(currentDate, { weekStartsOn: 1 }); return `${format(start, 'dd/MM')} - ${format(end, 'dd/MM/yyyy')}`; }
       if (viewMode === 'month') return `Tháng ${format(currentDate, 'MM/yyyy')}`;
       return `Năm ${format(currentDate, 'yyyy')}`;
   }
 
-  // --- CONFIG TIME ---
   const HOURS = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0'));
   const MINUTES = Array.from({length: 12}, (_, i) => (i * 5).toString().padStart(2, '0'));
 
@@ -284,11 +225,9 @@ export default function AdminPage() {
             <div className="flex items-center gap-2">
                 {currentUser?.role === 'super_admin' && (
                     <>
-                        {/* NÚT QUẢN LÝ THÔNG BÁO (MỚI) */}
                         <button onClick={() => { setShowAnnouncementModal(true); loadAnnouncements(); }} className="flex items-center gap-2 text-xs font-bold text-yellow-400 bg-yellow-900/20 px-4 py-2.5 rounded-xl hover:bg-yellow-900/30 transition active:scale-95 border border-yellow-500/30">
                             <Megaphone size={16}/> <span className="hidden sm:inline">Thông báo</span>
                         </button>
-
                         <button onClick={() => { setShowMemberModal(true); loadMembers(); }} className="flex items-center gap-2 text-xs font-bold text-blue-400 bg-blue-900/20 px-4 py-2.5 rounded-xl hover:bg-blue-900/30 transition active:scale-95 border border-blue-500/30">
                             <Users size={16}/> <span className="hidden sm:inline">Thành Viên</span>
                         </button>
@@ -301,7 +240,6 @@ export default function AdminPage() {
       </div>
 
       <div className="max-w-[1600px] mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
         {/* --- CỘT TRÁI: FORM NHẬP LIỆU --- */}
         <div className="lg:col-span-3 h-fit">
             <div className={`border p-5 rounded-3xl backdrop-blur-md shadow-2xl transition-all ${editingId ? 'bg-blue-900/10 border-blue-500/50 ring-1 ring-blue-500/30' : 'bg-white/5 border-white/10'}`}>
@@ -309,7 +247,6 @@ export default function AdminPage() {
                     {editingId ? <><Edit className="text-blue-400" size={24}/> Chỉnh Sửa Lễ</> : <><Plus className="text-gold" size={24}/> Thêm Lễ Mới</>}
                 </h2>
                 <form onSubmit={handleSave} className="space-y-5">
-                    {/* INPUT: NGÀY */}
                     <div className="space-y-1.5 relative" ref={calRef}>
                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Ngày diễn ra</label>
                         <div onClick={() => setShowCalendar(!showCalendar)} className="w-full bg-black/40 border border-white/10 hover:border-white/30 rounded-xl p-3.5 text-white flex justify-between items-center cursor-pointer active:scale-95 transition group">
@@ -339,7 +276,6 @@ export default function AdminPage() {
                             </div>
                         )}
                     </div>
-                    {/* INPUT: GIỜ & TÊN */}
                     <div className="grid grid-cols-5 gap-3">
                         <div className="col-span-2 space-y-1.5 relative" ref={timeRef}>
                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Giờ</label>
@@ -358,7 +294,6 @@ export default function AdminPage() {
                              <input type="text" placeholder="Vd: Lễ Sáng" required className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-white placeholder-white/20 focus:border-gold outline-none transition font-medium" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
                         </div>
                     </div>
-                    {/* INPUT: ĐỊA ĐIỂM */}
                     <div className="space-y-1.5 relative" ref={locRef}>
                          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Địa điểm</label>
                          <div className="relative group">
@@ -377,7 +312,6 @@ export default function AdminPage() {
                             )}
                          </div>
                     </div>
-                    {/* INPUT: LINH MỤC */}
                     <div className="space-y-1.5">
                          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Linh mục (Tùy chọn)</label>
                          <input type="text" placeholder="Vd: Cha Giuse..." className="w-full bg-black/40 border border-white/10 rounded-xl p-3.5 text-white placeholder-white/20 focus:border-gold outline-none transition font-medium" value={form.priest_name} onChange={e => setForm({...form, priest_name: e.target.value})} />
@@ -400,7 +334,6 @@ export default function AdminPage() {
         {/* --- CỘT PHẢI: DASHBOARD --- */}
         <div className="lg:col-span-9">
              <div className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md overflow-hidden flex flex-col min-h-[600px] shadow-2xl">
-                {/* TOOLBAR */}
                 <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row gap-4 justify-between items-center bg-black/20">
                     <div className="flex items-center gap-1 bg-black/40 p-1.5 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
                         {['day', 'week', 'month', 'year'].map((m) => (
@@ -417,7 +350,6 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* CONTENT AREA */}
                 <div className="p-4 flex-grow bg-black/20 overflow-y-auto custom-scrollbar">
                     {viewMode === 'year' && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -602,13 +534,11 @@ export default function AdminPage() {
                                   </div>
                                   
                                   <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0">
-                                      {/* Hiển thị Badge Role hiện tại */}
                                       {mem.role === 'super_admin' ? 
                                           <div className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-bold whitespace-nowrap">Đang là Admin</div> 
                                           : <div className="px-3 py-1.5 rounded-lg bg-slate-700/50 text-slate-400 border border-white/5 text-xs font-bold whitespace-nowrap">Đang là Member</div>
                                       }
 
-                                      {/* CÁC NÚT THAO TÁC RÕ RÀNG (KHÔNG DÙNG ICON KHÓ HIỂU) */}
                                       {mem.email !== currentUser?.email && (
                                           <>
                                               <div className="w-px h-8 bg-white/10 mx-2"></div>
