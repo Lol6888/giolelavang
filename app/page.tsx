@@ -5,6 +5,7 @@ import { format, parseISO, addDays, isSameDay, differenceInSeconds } from 'date-
 import { vi } from 'date-fns/locale'
 import { Clock, MapPin, Calendar, Sun, CloudRain, X, Loader2, User } from 'lucide-react'
 
+// --- TYPES ---
 type Schedule = {
   id: number; date: string; start_time: string; title: string; priest_name: string; note: string; location: string; video_url?: string;
 }
@@ -16,12 +17,12 @@ export default function CinematicHome() {
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState({ temp: 28, code: 0, desc: 'Đang tải...' })
   const [marqueeList, setMarqueeList] = useState<string[]>([]) 
-  const [animKey, setAnimKey] = useState(0)
-  
-  // --- CHIẾN THUẬT HARDCORE ---
-  const [isIOS, setIsIOS] = useState(false)
+
+  // --- HỆ THỐNG PHÒNG THỦ IOS HARDCORE ---
+  const [refreshKey, setRefreshKey] = useState(0)
   const lastActiveTime = useRef(Date.now())
 
+  // Modal State
   const [showWeekModal, setShowWeekModal] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [loadingWeek, setLoadingWeek] = useState(false)
@@ -30,24 +31,29 @@ export default function CinematicHome() {
   const MASS_DURATION_MINUTES = 30; 
   const COUNTDOWN_THRESHOLD_MINUTES = 15; 
 
-  // 1. Nhận diện iPhone/iPad ngay khi load
+  // 1. Máy phát điện: CHỈ kích hoạt cho iPhone/iPad để ép vẽ lại trang mỗi phút
   useEffect(() => {
-    const checkIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    setIsIOS(checkIOS);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      const keepAlive = setInterval(() => {
+        setRefreshKey(prev => prev + 1);
+      }, 60000); 
+      return () => clearInterval(keepAlive);
+    }
   }, []);
 
-  // 2. Ép tải lại trang ngay lập tức nếu vắng mặt > 60 giây (Chống treo GPU Safari)
+  // 2. Tự động F5 nếu vắng mặt quá 2 tiếng & Reset Animation khi quay lại
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        const secondsPassed = (Date.now() - lastActiveTime.current) / 1000;
-        if (secondsPassed > 60) {
-          window.location.reload(); 
-        } else {
-          setAnimKey(Date.now());
-          lastActiveTime.current = Date.now();
+        const hoursPassed = (Date.now() - lastActiveTime.current) / (1000 * 60 * 60);
+        if (hoursPassed > 2) {
+          window.location.reload();
+          return;
         }
-      } else {
+        fetchSchedules();
+        fetchAnnouncements();
+        setRefreshKey(Date.now()); // Ép vẽ lại ngay lập tức
         lastActiveTime.current = Date.now();
       }
     };
@@ -55,6 +61,7 @@ export default function CinematicHome() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
+  // --- CÁC LOGIC XỬ LÝ DỮ LIỆU ---
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t) }, [])
 
   useEffect(() => {
@@ -124,7 +131,7 @@ export default function CinematicHome() {
         ctx.stroke(); requestAnimationFrame(draw);
     }
     draw();
-  }, [weather.code])
+  }, [weather.code, refreshKey])
 
   const getStatus = () => {
     const timeStr = format(now, 'HH:mm:ss');
@@ -154,24 +161,42 @@ export default function CinematicHome() {
   
   const status = getStatus();
 
-  // --- HỆ THỐNG STYLE "HẠT NHÂN" ---
-  // Nếu là iOS, dẹp bỏ hoàn toàn backdrop-blur để cứu GPU
-  const glassClass = isIOS ? "bg-black/85" : "bg-black/40 backdrop-blur-md";
-  const cardStyle = `${glassClass} border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0 overflow-hidden`;
-  const widgetStyle = `${glassClass} border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center overflow-hidden`;
+  const getBgFilter = () => {
+      if (weather.code >= 51) return 'none'; 
+      if (weather.code <= 3) return 'brightness(1.05) saturate(1.1)'; 
+      return 'brightness(1.1) saturate(1.2)'; 
+  }
+
+  // STYLES
+  const glassStyle = "bg-black/40 backdrop-blur-md border border-white/10 overflow-hidden";
+  const cardStyle = `${glassStyle} rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0`;
+  const widgetStyle = `${glassStyle} rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center`;
 
   return (
-    <div className="relative h-[100dvh] bg-slate-900 font-sans text-slate-100 overflow-hidden flex flex-col isolate">
-        {/* BACKGROUND - CHỐNG ĐEN NỀN BẰNG CÁCH DÙNG BACKGROUND TĨNH NẾU LÀ IOS */}
-        <div className="absolute inset-0 bg-basilica bg-cover bg-center z-0 animate-ken-burns"></div>
+    // THẦN CHÚ CHỐNG BUG: Dùng refreshKey để ép React remount toàn bộ trang trên iOS
+    <div key={refreshKey} className="relative h-[100dvh] bg-slate-900 font-sans text-slate-100 overflow-hidden flex flex-col isolate">
+        
+        {/* BACKGROUND */}
+        <div className="absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000" style={{ filter: getBgFilter() }}></div>
         <div className="absolute inset-0 bg-black/40 z-0"></div>
         <canvas ref={canvasRef} className="absolute inset-0 z-1 pointer-events-none"></canvas>
+        
+        {/* SUN RAYS */}
+        {weather.code <= 3 && (
+            <div className="absolute inset-0 z-1 pointer-events-none">
+                <div className="ray_box">
+                    <div className="ray" style={{height:'600px', width:'100px', transform:'rotate(180deg)', top:'-300px', left:'0'}}></div>
+                    <div className="ray" style={{height:'700px', width:'100px', transform:'rotate(220deg)', top:'-300px', left:'50px'}}></div>
+                    <div className="ray" style={{height:'800px', width:'100px', transform:'rotate(300deg)', top:'-300px', left:'100px'}}></div>
+                </div>
+            </div>
+        )}
 
-        {/* MARQUEE - KHÔNG BLUR TRÊN IOS ĐỂ TRÁNH CỤC ĐEN */}
+        {/* MARQUEE - UPDATE: Cỡ chữ LG chuẩn xác cho Mobile */}
         {marqueeList.length > 0 && (
-            <div className={`sticky top-0 z-[60] w-full border-b border-white/10 shadow-lg pt-[env(safe-area-inset-top)] isolate ${isIOS ? 'bg-black' : 'bg-black/40 backdrop-blur-md'}`}>
+            <div className="sticky top-0 z-[60] w-full bg-black/40 backdrop-blur-md border-b border-white/10 shadow-lg pt-[env(safe-area-inset-top)] isolate">
                  <div className="relative w-full overflow-hidden flex items-center py-3 sm:py-2 px-4">
-                     <div key={animKey} className="w-full flex select-none text-white font-medium text-lg sm:text-base leading-snug">
+                     <div className="w-full flex select-none text-white font-medium text-lg sm:text-base leading-snug">
                         <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee">
                             {marqueeList.map((text, i) => ( <span key={`t1-${i}`} className="tracking-wide block">{text}</span> ))}
                         </div>
@@ -183,18 +208,19 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MAIN CONTENT */}
+        {/* MAIN CONTAINER */}
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
             <div className="max-w-[1800px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0">
                 <div className="lg:hidden w-full h-[45vh] shrink-0 pointer-events-none"></div>
 
-                <div className="lg:col-span-7 h-auto lg:h-full relative flex flex-col justify-end order-1 lg:pl-4 lg:pb-12">
+                {/* LEFT COLUMN */}
+                <div className="lg:col-span-7 h-auto lg:h-full relative flex flex-col justify-end transition-all duration-500 order-1 lg:pl-4 lg:pb-12">
                      <div className="h-full flex flex-col justify-end items-start gap-2">
                         {status.type === 'happening' && status.item && (
                             <div className={`${cardStyle} border-red-500/30`}>
                                 <div className="flex items-center gap-2 mb-2"><span className="relative flex h-3 w-3"><span className="animate-ping absolute h-full w-full rounded-full bg-red-500 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span></span><span className="text-red-400 text-xs font-bold uppercase tracking-widest">Đang diễn ra</span></div>
                                 <h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-2 text-shadow">{status.item.title}</h1>
-                                <div className="inline-flex items-center gap-1.5 text-white/80 font-medium mb-3 bg-black/20 px-3 py-1 rounded-lg border border-white/5"><MapPin size={14} className="text-gold"/><span>{status.item.location}</span></div>
+                                <div className="inline-flex items-center gap-1.5 text-white/80 font-medium mb-3 bg-black/20 px-3 py-1 rounded-lg border border-white/5 backdrop-blur-sm"><MapPin size={14} className="text-gold"/><span>{status.item.location}</span></div>
                                 <div className="flex items-center gap-2 text-white/80 font-serif italic text-lg border-b border-white/10 pb-3 mb-0"><User size={18}/> <span className="truncate">Chủ tế: {status.item.priest_name}</span></div>
                                 <div className="mt-4 flex items-center gap-3 text-red-400 font-bold uppercase animate-pulse">Thánh lễ đang cử hành</div>
                             </div>
@@ -202,16 +228,16 @@ export default function CinematicHome() {
                         {status.type === 'countdown' && status.item && (
                             <div className={`${cardStyle} border-gold/30`}>
                                 <div className="bg-gold text-marian-dark font-bold text-xs px-3 py-1 rounded inline-block mb-3 uppercase shadow-lg">Sắp diễn ra</div>
-                                <h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-3 text-shadow">{status.item.title}</h1>
-                                <div className="flex items-center gap-2 mb-4 text-white/90"><MapPin size={14} className="text-gold"/><span className="text-xs sm:text-sm font-bold uppercase">{status.item.location}</span></div>
-                                <div className="bg-black/30 rounded-xl p-4 border border-white/10 mb-1 w-full text-center lg:text-left"><div className="text-[10px] text-white/60 uppercase mb-1 font-bold tracking-widest">Thời gian còn lại</div><div className="font-mono text-4xl sm:text-5xl lg:text-6xl font-bold text-white tabular-nums tracking-tighter">{status.diffString}</div></div>
+                                <h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-3 text-shadow leading-tight">{status.item.title}</h1>
+                                <div className="flex items-center gap-2 mb-4 text-white/90"><MapPin size={14} className="text-gold"/><span className="text-xs sm:text-sm font-bold uppercase tracking-widest">{status.item.location}</span></div>
+                                <div className="bg-black/30 rounded-xl p-4 border border-white/10 mb-1 w-full text-center lg:text-left"><div className="text-[10px] text-white/60 uppercase mb-1 font-bold">Thời gian còn lại</div><div className="font-mono text-4xl sm:text-5xl lg:text-6xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">{status.diffString}</div></div>
                             </div>
                         )}
                         {status.type === 'upcoming' && status.item && (
                             <div className={cardStyle}>
-                                <div className="flex items-center gap-2 mb-3"><div className={`w-2 h-2 rounded-full ${status.isTomorrow ? 'bg-blue-400' : 'bg-green-400'}`}></div><span className="text-xs font-bold uppercase tracking-widest">{status.isTomorrow ? 'Lễ ngày mai' : 'Sẵn sàng'}</span></div>
+                                <div className="flex items-center gap-2 mb-3"><div className={`w-2 h-2 rounded-full ${status.isTomorrow ? 'bg-blue-400 shadow-[0_0_10px_#60a5fa]' : 'bg-green-400 shadow-[0_0_10px_#4ade80]'}`}></div><span className="text-xs font-bold uppercase tracking-widest">{status.isTomorrow ? 'Lễ ngày mai' : 'Sẵn sàng'}</span></div>
                                 <div className="mb-4"><div className="text-gold-light text-xs uppercase mb-4 font-bold tracking-[0.2em]">Thánh Lễ Kế Tiếp</div><h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-6xl text-white text-shadow leading-tight">{status.item.title}</h1></div>
-                                <div className="flex gap-6 border-t border-white/20 pt-4"><div><div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div><div className="text-xl sm:text-2xl font-bold text-white font-mono">{status.item.start_time.slice(0,5)}{status.isTomorrow && <span className="text-xs text-white/50 ml-1">(Ngày mai)</span>}</div></div><div className="w-px bg-white/20"></div><div><div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Địa điểm</div><div className="text-xl sm:text-2xl font-serif italic text-white">{status.item.location}</div></div></div>
+                                <div className="flex gap-6 border-t border-white/20 pt-4"><div><div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div><div className="text-xl sm:text-2xl font-bold text-white font-mono">{status.item.start_time.slice(0,5)}{status.isTomorrow && <span className="text-xs text-white/50 ml-1 font-sans">(Ngày mai)</span>}</div></div><div className="w-px bg-white/20"></div><div><div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Địa điểm</div><div className="text-xl sm:text-2xl font-serif italic text-white">{status.item.location}</div></div></div>
                             </div>
                         )}
                         {status.type === 'finished' && (
@@ -224,13 +250,14 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
+                {/* RIGHT COLUMN */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
-                    <div className={`${glassClass} border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl isolate`}>
+                    <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl isolate">
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-center gap-4 flex-none">
-                            <h2 className="font-serif text-2xl sm:text-xl font-bold text-white">Thánh Lễ hôm nay</h2>
+                            <h2 className="font-serif text-2xl sm:text-xl font-bold text-white truncate tracking-wide">Thánh Lễ hôm nay</h2>
                             <div className="flex items-center gap-3 w-full sm:w-auto">
-                                <button onClick={() => setShowWeekModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gold/20 py-2 px-4 rounded-full active:scale-95"><Calendar size={16} className="text-gold"/><span className="text-xs font-bold text-gold uppercase">Lịch Tuần</span></button>
-                                <span className="flex-1 sm:flex-none text-center text-xs font-bold text-white/80 bg-white/10 py-2 px-4 rounded-full font-mono">{format(now, 'dd/MM/yyyy', {locale: vi})}</span>
+                                <button onClick={() => setShowWeekModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gold/20 hover:bg-gold/40 border border-gold/30 py-2 px-4 rounded-full transition active:scale-95"><Calendar size={16} className="text-gold"/><span className="text-xs font-bold text-gold uppercase tracking-wider">Lịch Tuần</span></button>
+                                <span className="flex-1 sm:flex-none text-center text-xs font-bold text-white/80 bg-white/10 py-2 px-4 rounded-full backdrop-blur border border-white/10 font-mono">{format(now, 'dd/MM/yyyy', {locale: vi})}</span>
                             </div>
                         </div>
                         <div className="overflow-y-auto flex-grow p-4 custom-scrollbar">
@@ -239,20 +266,20 @@ export default function CinematicHome() {
                                 schedules.map(ev => {
                                     const [h, m] = ev.start_time.split(':').map(Number);
                                     const start = new Date(now).setHours(h, m, 0, 0);
-                                    const end = start + 1800000;
+                                    const end = start + (MASS_DURATION_MINUTES * 60000);
                                     const isHappening = now.getTime() >= start && now.getTime() < end;
-                                    let rowClass = "flex items-center gap-4 py-6 px-6 rounded-2xl transition-all border border-transparent ";
-                                    if (isHappening) rowClass += "bg-gradient-to-r from-red-600/20 border-l-4 border-l-red-500 scale-[1.03]";
+                                    let rowClass = "flex items-center gap-4 py-6 px-6 rounded-2xl transition-all border border-transparent group ";
+                                    if (isHappening) rowClass += "bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 scale-[1.03] shadow-xl";
                                     else rowClass += (status.item?.id === ev.id ? "bg-white/5 border-l-4 border-l-gold/50" : "hover:bg-white/10");
                                     return (
                                         <div key={ev.id} className={rowClass}>
-                                            <div className={`w-16 text-right text-2xl font-mono ${isHappening ? 'text-red-400 font-bold' : 'text-white'}`}>{ev.start_time.slice(0,5)}</div>
+                                            <div className={`w-16 text-right text-2xl font-mono tracking-tight shrink-0 ${isHappening ? 'text-red-400 font-bold' : 'text-white'}`}>{ev.start_time.slice(0,5)}</div>
                                             <div className="flex-grow min-w-0 pl-2">
-                                                <div className={`text-lg sm:text-2xl font-serif mb-1 ${isHappening ? 'text-white font-bold' : 'text-white/90'}`}>{ev.title}</div>
-                                                <div className="text-xs text-white/70 uppercase font-bold flex items-center gap-1"><MapPin size={12}/>{ev.location}</div>
+                                                <div className={`text-lg sm:text-2xl font-serif mb-1 leading-tight ${isHappening ? 'text-white font-bold' : 'text-white/90'}`}>{ev.title}</div>
+                                                <div className="text-xs text-white/70 uppercase font-bold flex items-center gap-1.5"><MapPin size={12} className="text-gold-light shrink-0"/>{ev.location}</div>
                                                 <div className="text-xs text-white/60 italic mt-0.5">{ev.priest_name}</div>
                                             </div>
-                                            {isHappening && <span className="text-[10px] font-bold bg-red-600 px-2 py-1 rounded animate-pulse">LIVE</span>}
+                                            {isHappening && <span className="text-[10px] font-bold bg-red-600 text-white px-2 py-1 rounded shadow animate-pulse shrink-0">LIVE</span>}
                                         </div>
                                     )
                                 })}
@@ -265,11 +292,11 @@ export default function CinematicHome() {
 
         {/* WEEK MODAL */}
         {(showWeekModal || modalVisible) && (
-            <div className={`fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/85 transition-opacity duration-300 ${modalVisible ? 'opacity-100' : 'opacity-0'} isolate`}>
-                <div className={`bg-slate-900 border border-white/20 rounded-3xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl transition-transform duration-300 ${modalVisible ? 'scale-100' : 'scale-95'}`}>
-                    <div className="flex justify-between items-center p-6 border-b border-white/10">
-                        <div><h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">Lịch 7 ngày tới</h2></div>
-                        <button onClick={() => setShowWeekModal(false)} className="p-2 bg-white/10 rounded-full active:scale-90"><X size={24}/></button>
+            <div className={`fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-opacity duration-300 ${modalVisible ? 'opacity-100' : 'opacity-0'} isolate`}>
+                <div className={`bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-3xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl transition-transform duration-300 ${modalVisible ? 'scale-100' : 'scale-95'}`}>
+                    <div className="flex justify-between items-center p-6 border-b border-white/10 bg-white/5 rounded-t-3xl">
+                        <div><h2 className="font-serif text-2xl sm:text-3xl font-bold text-white text-shadow">Lịch Thánh Lễ trong 7 ngày tới</h2><p className="text-white/60 text-xs sm:text-sm mt-1">Chi tiết các Thánh Lễ</p></div>
+                        <button onClick={() => setShowWeekModal(false)} className="p-2 bg-white/10 rounded-full hover:bg-red-600/80 transition group active:scale-90"><X className="text-white" size={24}/></button>
                     </div>
                     <div className="overflow-y-auto p-6 bg-black/20 custom-scrollbar">
                         {loadingWeek ? <div className="h-40 flex items-center justify-center"><Loader2 className="animate-spin text-gold" size={32}/></div> : 
@@ -279,13 +306,13 @@ export default function CinematicHome() {
                                 for(let i=0; i<7; i++) { const d = format(addDays(new Date(), i), 'yyyy-MM-dd'); grouped[d] = []; }
                                 weekSchedules.forEach(s => { if(grouped[s.date]) grouped[s.date].push(s); });
                                 return Object.entries(grouped).map(([date, items]: any) => (
-                                    <div key={date} className={`rounded-xl border p-4 transition ${isSameDay(parseISO(date), now) ? 'border-gold bg-gold/10 ring-1 ring-gold/50' : 'border-white/10 bg-white/5'}`}>
-                                        <div className="flex justify-between items-center mb-3 border-b border-white/10 pb-2"><span className="font-serif font-bold text-lg text-white capitalize">{format(parseISO(date), 'EEEE', {locale: vi})}</span><span className="text-xs font-bold text-white/70">{format(parseISO(date), 'dd/MM')}</span></div>
-                                        <div className="space-y-3">{items.length === 0 ? <p className="text-xs text-white/30 italic text-center">- Trống -</p> : items.map((ev: any) => (
-                                            <div key={ev.id} className="flex flex-col gap-1 py-1 border-b border-white/5 last:border-0">
-                                                <div className="flex items-center gap-2"><div className="font-mono text-white font-bold bg-white/10 px-1.5 rounded text-xs">{ev.start_time.slice(0,5)}</div><div className="text-sm font-bold text-white leading-tight">{ev.title}</div></div>
-                                                <div className="text-[10px] text-white/50 uppercase flex items-center gap-1 ml-10"><MapPin size={10}/>{ev.location}</div>
-                                                {ev.priest_name && <div className="text-[10px] text-white/40 italic flex items-center gap-1 ml-10"><User size={10}/>{ev.priest_name}</div>}
+                                    <div key={date} className={`rounded-xl border p-4 transition duration-300 ${isSameDay(parseISO(date), now) ? 'border-gold bg-gold/10 ring-1 ring-gold/50 shadow-lg' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>
+                                        <div className="flex justify-between items-center mb-3 border-b border-white/10 pb-2"><span className="font-serif font-bold text-lg text-white capitalize">{format(parseISO(date), 'EEEE', {locale: vi})}</span><span className={`text-[10px] font-bold border border-current px-2 py-0.5 rounded-full font-mono ${isSameDay(parseISO(date), now) ? 'text-gold' : 'text-white/70'}`}>{format(parseISO(date), 'dd/MM')}</span></div>
+                                        <div className="space-y-3">{items.length === 0 ? <p className="text-xs text-white/30 italic text-center py-2">- Trống -</p> : items.map((ev: any) => (
+                                            <div key={ev.id} className="flex flex-col gap-1 py-1.5 border-b border-white/5 last:border-0 group">
+                                                <div className="flex items-start gap-2"><div className="font-mono text-white font-bold bg-white/10 px-1.5 rounded text-xs mt-0.5">{ev.start_time.slice(0,5)}</div><div className="text-sm font-bold text-white leading-snug break-words">{ev.title}</div></div>
+                                                <div className="text-[10px] text-white/50 uppercase flex items-start gap-1 ml-10"><MapPin size={10} className="shrink-0 mt-0.5"/><span>{ev.location}</span></div>
+                                                {ev.priest_name && <div className="text-[10px] text-white/40 italic flex items-start gap-1 ml-10"><User size={10} className="shrink-0 mt-0.5"/><span>{ev.priest_name}</span></div>}
                                             </div>
                                         ))}</div>
                                     </div>
