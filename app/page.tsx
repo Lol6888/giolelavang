@@ -20,6 +20,34 @@ export default function CinematicHome() {
   // State cho thông báo chạy (Marquee)
   const [marqueeList, setMarqueeList] = useState<string[]>([]) 
 
+  // --- PHƯƠNG ÁN VÔ CHIÊU THẮNG HỮU CHIÊU ---
+  const [refreshKey, setRefreshKey] = useState(0)
+  const lastActiveTime = useRef(Date.now())
+
+  // 1. Máy phát điện: Chỉ chạy trên iOS, ép vẽ lại trang mỗi 60s để Safari luôn thấy trang "mới"
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      const keepAlive = setInterval(() => {
+        setRefreshKey(prev => prev + 1);
+      }, 60000); 
+      return () => clearInterval(keepAlive);
+    }
+  }, []);
+
+  // 2. Reload tức thì: Quay lại tab là tải mới 100% (chỉ áp dụng cho iOS)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (document.visibilityState === 'visible' && isIOS) {
+        // Tải lại trang ngay lập tức để xóa sạch lỗi cache đồ họa của Safari
+        window.location.replace(window.location.href); 
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   // Modal State
   const [showWeekModal, setShowWeekModal] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
@@ -124,7 +152,7 @@ export default function CinematicHome() {
         ctx.stroke(); requestAnimationFrame(draw);
     }
     draw();
-  }, [weather.code])
+  }, [weather.code, refreshKey]) // Reset canvas khi refreshKey đổi
 
   // --- HELPER: FORMAT COUNTDOWN (MM:SS) ---
   const getCountdownString = (targetTimeStr: string) => {
@@ -197,7 +225,8 @@ export default function CinematicHome() {
   const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0";
 
   return (
-    <div className="relative h-screen font-sans text-slate-100 overflow-hidden flex flex-col">
+    // THAY ĐỔI: h-screen thành h-[100dvh], isolate và key={refreshKey}
+    <div key={refreshKey} className="relative h-[100dvh] font-sans text-slate-100 overflow-hidden flex flex-col isolate">
         {/* BACKGROUND */}
         <div 
             className="absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000"
@@ -217,9 +246,9 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - CẬP NHẬT: GLASSMORPHISM & FONT MEDIUM */}
+        {/* MARQUEE - GIỮ NGUYÊN GIAO DIỆN CHUẨN CỦA BẠN */}
         {marqueeList.length > 0 && (
-            <div className="sticky top-0 z-[60] bg-black/40 backdrop-blur-md text-white font-medium text-1g sm:text-base py-3 sm:py-2 px-4 border-b border-white/10 shrink-0 shadow-lg">
+            <div className="sticky top-0 z-[60] bg-black/40 backdrop-blur-md text-white font-medium text-lg sm:text-base py-3 sm:py-2 px-4 border-b border-white/10 shrink-0 shadow-lg">
                  <div className="marquee-container w-full flex overflow-hidden select-none">
                     {/* TRACK 1 */}
                     <div 
@@ -284,7 +313,7 @@ export default function CinematicHome() {
                                     <span className="text-xs sm:text-sm font-bold uppercase tracking-widest">{status.item.location}</span>
                                 </div>
                                 <div className="bg-black/30 rounded-xl p-3 sm:p-4 border border-white/10 mb-1 inline-block w-full text-center lg:text-left">
-                                    <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">Thời gian còn lại</div>
+                                    <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">SẼ BẮT ĐẦU SAU</div>
                                     <div className="font-mono text-4xl sm:text-5xl lg:text-6xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
                                         {status.diffString}
                                     </div>
