@@ -19,7 +19,7 @@ const config: Config = {
         mono: ['var(--font-montserrat)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
       },
       backgroundImage: {
-        'basilica': "url('https://images.pexels.com/photos/36081004/pexels-photo-36081004.png')",
+        'basilica': "url('https://bestreviewinsight.com/wp-content/uploads/2026/02/Untitled-design.jpg')",
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out forwards',
