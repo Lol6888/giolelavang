@@ -217,9 +217,9 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - UPDATE CHỐNG LAG IOS & TO RÕ HƠN */}
+        {/* MARQUEE - CẬP NHẬT: TO RÕ GẤP ĐÔI TRÊN MOBILE, GIỮ NGUYÊN DESKTOP */}
         {marqueeList.length > 0 && (
-            <div className="sticky top-0 z-[60] bg-black/70 backdrop-blur-md text-white font-medium text-sm sm:text-base py-2.5 sm:py-3 px-4 border-b border-white/10 shrink-0 shadow-lg">
+            <div className="sticky top-0 z-[60] bg-black/80 backdrop-blur-md text-white font-bold text-2xl sm:font-medium sm:text-base py-4 sm:py-3 px-4 border-b border-white/10 shrink-0 shadow-lg">
                  <div className="marquee-container w-full flex overflow-hidden select-none">
                     {/* TRACK 1 */}
                     <div 
