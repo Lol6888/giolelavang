@@ -284,7 +284,7 @@ export default function CinematicHome() {
                                     <span className="text-xs sm:text-sm font-bold uppercase tracking-widest">{status.item.location}</span>
                                 </div>
                                 <div className="bg-black/30 rounded-xl p-3 sm:p-4 border border-white/10 mb-1 inline-block w-full text-center lg:text-left">
-                                    <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">Thời gian còn lại</div>
+                                    <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">SẼ BẮT ĐẦU SAU</div>
                                     <div className="font-mono text-4xl sm:text-5xl lg:text-6xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
                                         {status.diffString}
                                     </div>
