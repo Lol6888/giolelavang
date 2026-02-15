@@ -17,7 +17,7 @@ export default function CinematicHome() {
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState({ temp: 28, code: 0, desc: 'Đang tải...' })
   
-  // State cho thông báo chạy (Marquee) - Khởi tạo mảng rỗng vì đã dùng Supabase
+  // State cho thông báo chạy (Marquee)
   const [marqueeList, setMarqueeList] = useState<string[]>([]) 
 
   // Modal State
@@ -70,7 +70,7 @@ export default function CinematicHome() {
       if (data && data.length > 0) {
           setMarqueeList(data.map(item => item.content));
       } else {
-          setMarqueeList([]); // Clear if all announcements are inactive
+          setMarqueeList([]); 
       }
   }
 
@@ -217,20 +217,27 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - Chỉ hiển thị khi có thông báo */}
+        {/* MARQUEE - UPDATE CHỐNG LAG IOS & TO RÕ HƠN */}
         {marqueeList.length > 0 && (
-            <div className="sticky top-0 z-[60] bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm py-2 px-4 border-b border-white/10 shrink-0">
-                 <div className="marquee-container w-full flex overflow-hidden">
+            <div className="sticky top-0 z-[60] bg-black/70 backdrop-blur-md text-white font-medium text-sm sm:text-base py-2.5 sm:py-3 px-4 border-b border-white/10 shrink-0 shadow-lg">
+                 <div className="marquee-container w-full flex overflow-hidden select-none">
                     {/* TRACK 1 */}
-                    <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee">
+                    <div 
+                        className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee will-change-transform"
+                        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
+                    >
                         {marqueeList.map((text, i) => (
-                            <span key={`t1-${i}`}>{text}</span>
+                            <span key={`t1-${i}`} className="tracking-wide">{text}</span>
                         ))}
                     </div>
                     {/* TRACK 2 */}
-                    <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee" aria-hidden="true">
+                    <div 
+                        className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee will-change-transform" 
+                        aria-hidden="true"
+                        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
+                    >
                         {marqueeList.map((text, i) => (
-                            <span key={`t2-${i}`}>{text}</span>
+                            <span key={`t2-${i}`} className="tracking-wide">{text}</span>
                         ))}
                     </div>
                 </div>
