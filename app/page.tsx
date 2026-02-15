@@ -17,16 +17,15 @@ export default function CinematicHome() {
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState({ temp: 28, code: 0, desc: 'Đang tải...' })
   
-  // State cho thông báo chạy (Marquee)
   const [marqueeList, setMarqueeList] = useState<string[]>([]) 
   const [animKey, setAnimKey] = useState(0)
 
-  // Modal State
   const [showWeekModal, setShowWeekModal] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [loadingWeek, setLoadingWeek] = useState(false)
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const lastActiveTime = useRef(Date.now())
 
   // --- CONFIG ---
   const MASS_DURATION_MINUTES = 30; 
@@ -35,7 +34,6 @@ export default function CinematicHome() {
   // --- LOGIC ---
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t) }, [])
 
-  // Fetch Weather
   useEffect(() => {
     async function fetchWeather() {
       try {
@@ -52,16 +50,11 @@ export default function CinematicHome() {
     fetchWeather(); setInterval(fetchWeather, 600000)
   }, [])
 
-  // Fetch Schedules & Announcements
   const fetchSchedules = async () => {
     const todayStr = format(new Date(), 'yyyy-MM-dd')
     const tomorrowStr = format(addDays(new Date(), 1), 'yyyy-MM-dd')
-
-    // 1. Lấy lịch hôm nay
     const { data: todayData } = await supabase.from('schedules').select('*').eq('date', todayStr).order('start_time')
     if (todayData) setSchedules(todayData)
-
-    // 2. Lấy lễ sớm nhất của ngày mai
     const { data: tomorrowData } = await supabase.from('schedules').select('*').eq('date', tomorrowStr).order('start_time').limit(1).single()
     if (tomorrowData) setNextDaySchedule(tomorrowData)
   }
@@ -84,11 +77,9 @@ export default function CinematicHome() {
       setLoadingWeek(false);
   }
 
-  // Realtime Subscription
   useEffect(() => {
     fetchSchedules()
     fetchAnnouncements() 
-
     const ch = supabase.channel('home')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, () => {
         fetchSchedules(); if(showWeekModal) fetchWeekSchedules();
@@ -97,24 +88,31 @@ export default function CinematicHome() {
         fetchAnnouncements(); 
     })
     .subscribe()
-
     return () => { supabase.removeChannel(ch) }
   }, [])
 
-  // --- BÁO THỨC SAFARI (Vẫn giữ để trị bệnh mất animation) ---
+  // --- BÁO THỨC SAFARI & AUTO F5 KHI VẮNG MẶT QUÁ 2 TIẾNG ---
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        const currentTime = Date.now();
+        const hoursPassed = (currentTime - lastActiveTime.current) / (1000 * 60 * 60);
+
+        if (hoursPassed > 2) {
+          window.location.reload();
+          return;
+        }
+
         fetchSchedules();
         fetchAnnouncements();
-        setAnimKey(Date.now()); 
+        setAnimKey(currentTime); 
+        lastActiveTime.current = currentTime;
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // Modal Animation
   useEffect(() => {
       if(showWeekModal) {
           fetchWeekSchedules();
@@ -124,7 +122,6 @@ export default function CinematicHome() {
       }
   }, [showWeekModal])
 
-  // Canvas Rain
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas || weather.code < 51) return;
     const ctx = canvas.getContext('2d'); if(!ctx) return;
@@ -140,28 +137,21 @@ export default function CinematicHome() {
     draw();
   }, [weather.code])
 
-  // --- HELPER: FORMAT COUNTDOWN (MM:SS) ---
   const getCountdownString = (targetTimeStr: string) => {
       const [h, m] = targetTimeStr.split(':').map(Number);
       const target = new Date(now);
       target.setHours(h, m, 0, 0);
-      
       let diffSec = differenceInSeconds(target, now);
       if (diffSec < 0) return "00:00"; 
-
       const minutes = Math.floor(diffSec / 60);
       const seconds = diffSec % 60;
       const mm = minutes.toString().padStart(2, '0');
       const ss = seconds.toString().padStart(2, '0');
-
       return `${mm}:${ss}`;
   }
 
-  // --- CORE LOGIC: XÁC ĐỊNH TRẠNG THÁI HIỂN THỊ ---
   const getStatus = () => {
     const timeStr = format(now, 'HH:mm:ss');
-    
-    // 1. Tìm lễ đang diễn ra
     const current = schedules.find(s => {
         const [h, m] = s.start_time.split(':').map(Number);
         const endDate = new Date(now);
@@ -169,17 +159,14 @@ export default function CinematicHome() {
         const endStr = format(endDate, 'HH:mm:ss');
         return timeStr >= s.start_time && timeStr < endStr;
     });
-
     if(current) return { type: 'happening', item: current };
 
-    // 2. Tìm lễ sắp tới
     const next = schedules.find(s => s.start_time > timeStr);
     if(next) {
         const [h, m] = next.start_time.split(':').map(Number);
         const target = new Date(now);
         target.setHours(h, m, 0, 0);
         const diffMinutes = (target.getTime() - now.getTime()) / 60000;
-
         if (diffMinutes <= COUNTDOWN_THRESHOLD_MINUTES) {
             return { type: 'countdown', item: next, diffString: getCountdownString(next.start_time) };
         } else {
@@ -187,12 +174,7 @@ export default function CinematicHome() {
         }
     }
     
-    // 3. Hết lễ hôm nay -> Hiển thị lễ ngày mai
-    if (nextDaySchedule) {
-        return { type: 'upcoming', item: nextDaySchedule, isTomorrow: true };
-    }
-
-    // 4. Không có lễ
+    if (nextDaySchedule) return { type: 'upcoming', item: nextDaySchedule, isTomorrow: true };
     return { type: 'finished' };
   }
   
@@ -204,16 +186,12 @@ export default function CinematicHome() {
       return 'brightness(1.1) saturate(1.2)'; 
   }
 
-  // CSS CLASSES - ĐÃ THÊM OVERFLOW-HIDDEN THEO CHUẨN FIX BUG
   const widgetContainerStyle = "flex gap-3 sm:gap-4 mt-2 w-full max-w-xl mx-auto lg:mx-0"; 
   const widgetStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center overflow-hidden";
   const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0 overflow-hidden";
 
   return (
-    // THAY ĐỔI 1: h-screen thành h-[100dvh] + base bg-slate-900 tránh đen nền
     <div className="relative h-[100dvh] bg-slate-900 font-sans text-slate-100 overflow-hidden flex flex-col">
-        
-        {/* BACKGROUND */}
         <div 
             className="absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000"
             style={{ filter: getBgFilter() }}
@@ -221,7 +199,6 @@ export default function CinematicHome() {
         <div className="absolute inset-0 bg-black/40 z-0"></div>
         <canvas ref={canvasRef} className="absolute inset-0 z-1 pointer-events-none"></canvas>
         
-        {/* SUN RAYS */}
         {weather.code <= 3 && (
             <div className="absolute inset-0 z-1 pointer-events-none">
                 <div className="ray_box">
@@ -232,38 +209,36 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - THAY ĐỔI 2 & 3: pt-[env...] VÀ overflow-hidden chuẩn */}
+        {/* MARQUEE - TÁCH LAYER BẢO VỆ CHỮ KHÔNG BỊ XÉN */}
         {marqueeList.length > 0 && (
-            <div className="sticky top-0 z-[60] w-full bg-black/40 backdrop-blur-md border-b border-white/10 pt-[env(safe-area-inset-top)] overflow-hidden shadow-lg">
-                 <div key={animKey} className="w-full flex overflow-hidden select-none py-3 sm:py-2 px-4 text-white font-medium text-1g sm:text-base relative z-10">
-                    {/* TRACK 1 */}
-                    <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee">
-                        {marqueeList.map((text, i) => (
-                            <span key={`t1-${i}`} className="tracking-wide">{text}</span>
-                        ))}
+            <div className="sticky top-0 z-[60] w-full bg-black/40 backdrop-blur-md border-b border-white/10 shadow-lg pt-[env(safe-area-inset-top)]">
+                 {/* Lớp bọc an toàn có padding y để chữ thoải mái */}
+                 <div className="relative w-full overflow-hidden flex items-center py-3.5 sm:py-3 px-4">
+                     <div key={animKey} className="w-full flex select-none text-white font-bold text-xl sm:font-medium sm:text-base leading-snug">
+                        <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee">
+                            {marqueeList.map((text, i) => (
+                                <span key={`t1-${i}`} className="tracking-wide block">{text}</span>
+                            ))}
+                        </div>
+                        <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee" aria-hidden="true">
+                            {marqueeList.map((text, i) => (
+                                <span key={`t2-${i}`} className="tracking-wide block">{text}</span>
+                            ))}
+                        </div>
                     </div>
-                    {/* TRACK 2 */}
-                    <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee" aria-hidden="true">
-                        {marqueeList.map((text, i) => (
-                            <span key={`t2-${i}`} className="tracking-wide">{text}</span>
-                        ))}
-                    </div>
-                </div>
+                 </div>
             </div>
         )}
 
         {/* MAIN SCROLL CONTAINER */}
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
             <div className="max-w-[1800px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0">
-                
-                {/* SPACER MOBILE */}
                 <div className="lg:hidden w-full h-[45vh] shrink-0 pointer-events-none"></div>
 
                 {/* LEFT COLUMN */}
                 <div className="lg:col-span-7 h-auto lg:h-full relative flex flex-col justify-end transition-all duration-500 order-1 lg:pl-4 lg:pb-12">
                      <div className="h-full flex flex-col justify-end items-start gap-2">
                         
-                        {/* 1. HAPPENING */}
                         {status.type === 'happening' && status.item && (
                             <div className={`${cardStyle} border-red-500/30`}>
                                 <div className="flex items-center gap-2 sm:gap-3 mb-2"><span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span><span className="relative inline-flex rounded-full h-full w-full bg-red-600"></span></span><span className="text-red-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Đang diễn ra</span></div>
@@ -282,7 +257,6 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 2. COUNTDOWN */}
                         {status.type === 'countdown' && status.item && (
                             <div className={`${cardStyle} border-gold/30`}>
                                 <div className="bg-gold text-marian-dark font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded inline-block mb-2 sm:mb-3 uppercase tracking-widest shadow-lg">Sắp diễn ra</div>
@@ -300,7 +274,6 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 3. UPCOMING */}
                         {status.type === 'upcoming' && status.item && (
                             <div className={cardStyle}>
                                 <div className="flex items-center gap-2 mb-2 sm:mb-3">
@@ -327,7 +300,6 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* 4. FINISHED */}
                         {status.type === 'finished' && (
                             <div className={cardStyle}>
                                 <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 text-shadow">Lạy Mẹ La Vang</h1>
@@ -335,7 +307,6 @@ export default function CinematicHome() {
                             </div>
                         )}
 
-                        {/* WIDGETS */}
                         <div className={widgetContainerStyle}>
                             <div className={widgetStyle}>
                                 {weather.code >= 51 ? <CloudRain className="text-blue-400 w-6 h-6 sm:w-8 sm:h-8"/> : <Sun className="text-yellow-400 w-6 h-6 sm:w-8 sm:h-8"/>}
@@ -349,10 +320,9 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN (DANH SÁCH LỄ) */}
+                {/* RIGHT COLUMN */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
                     <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
-                        {/* HEADER */}
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 flex-none">
                             <h2 className="font-serif text-2xl sm:text-xl font-bold text-white tracking-wide truncate">Thánh Lễ hôm nay</h2>
                             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -366,24 +336,19 @@ export default function CinematicHome() {
                             </div>
                         </div>
 
-                        {/* LIST AREA */}
                         <div className="overflow-y-auto flex-grow p-3 sm:p-4 custom-scrollbar">
                             <div className="space-y-3 sm:space-y-6 relative pl-6 sm:pl-8 before:absolute before:left-[27px] sm:before:left-[35px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
     {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-base">Không có lễ hôm nay.</p> :
     schedules.map(ev => {
         const timeStr = format(now, 'HH:mm:ss');
         const [h, m] = ev.start_time.split(':').map(Number);
-        
         const endDate = new Date(now);
         endDate.setHours(h, m + MASS_DURATION_MINUTES, 0, 0);
         const endStr = format(endDate, 'HH:mm:ss');
-
         const isHappening = timeStr >= ev.start_time && timeStr < endStr;
         const isUpcoming = timeStr < ev.start_time;
-        const isPast = timeStr >= endStr;
 
         let rowClass = "flex items-center gap-3 sm:gap-6 py-5 px-4 sm:py-6 sm:px-6 rounded-2xl transition-all border border-transparent group ";
-        
         if (isHappening) {
             rowClass += "bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 shadow-xl transform scale-[1.03]";
         } else if (isUpcoming) {
@@ -402,7 +367,6 @@ export default function CinematicHome() {
                     ${isHappening ? 'text-red-400 font-bold' : (isUpcoming ? 'text-gold font-bold' : 'text-white')}`}>
                     {ev.start_time.slice(0,5)}
                 </div>
-
                 <div className="flex-grow min-w-0 pl-2 sm:pl-2">
                     <div className={`text-lg sm:text-2xl text-shadow-light font-serif leading-tight mb-1
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
@@ -414,7 +378,6 @@ export default function CinematicHome() {
                     </div>
                     <div className="text-xs sm:text-sm text-white/60 italic mt-0.5">{ev.priest_name}</div>
                 </div>
-
                 {isHappening && <span className="text-[10px] sm:text-xs font-bold bg-red-600 text-white px-2 py-1 rounded shadow animate-pulse shrink-0">LIVE</span>}
                 {isUpcoming && status.item?.id === ev.id && <span className="text-[10px] sm:text-xs font-bold bg-gold/20 text-gold border border-gold/30 px-2 py-1 rounded shrink-0">SẮP TỚI</span>}
             </div>
