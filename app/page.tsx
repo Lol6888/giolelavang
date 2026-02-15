@@ -219,7 +219,7 @@ export default function CinematicHome() {
 
         {/* MARQUEE - CẬP NHẬT: GLASSMORPHISM & FONT MEDIUM */}
         {marqueeList.length > 0 && (
-            <div className="sticky top-0 z-[60] bg-black/40 backdrop-blur-md text-white font-medium text-2xl sm:text-base py-4 sm:py-3 px-4 border-b border-white/10 shrink-0 shadow-lg">
+            <div className="sticky top-0 z-[60] bg-black/40 backdrop-blur-md text-white font-medium text-1g sm:text-base py-3 sm:py-2 px-4 border-b border-white/10 shrink-0 shadow-lg">
                  <div className="marquee-container w-full flex overflow-hidden select-none">
                     {/* TRACK 1 */}
                     <div 
