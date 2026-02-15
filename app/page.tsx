@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { format, parseISO, addDays, isSameDay, differenceInSeconds } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { Clock, MapPin, Calendar, Sun, CloudRain, X, Loader2, User, PlayCircle } from 'lucide-react'
+import { Clock, MapPin, Calendar, Sun, CloudRain, X, Loader2, User } from 'lucide-react'
 
 // --- TYPES ---
 type Schedule = {
@@ -18,11 +18,7 @@ export default function CinematicHome() {
   const [weather, setWeather] = useState({ temp: 28, code: 0, desc: 'Đang tải...' })
   
   // State cho thông báo chạy (Marquee)
-  const [marqueeList, setMarqueeList] = useState<string[]>([
-      "🔔 Xin quý khách giữ vệ sinh chung nơi tôn nghiêm.",
-      "🙏 Giờ Giải Tội: Trước và sau mỗi Thánh Lễ tại Nhà Nguyện.",
-      "✝️ Làm Phép ảnh, tượng sau mỗi Thánh Lễ."
-  ]) 
+  const [marqueeList, setMarqueeList] = useState<string[]>([]) 
 
   // Modal State
   const [showWeekModal, setShowWeekModal] = useState(false)
@@ -73,6 +69,8 @@ export default function CinematicHome() {
       const { data } = await supabase.from('announcements').select('content').eq('is_active', true).order('id');
       if (data && data.length > 0) {
           setMarqueeList(data.map(item => item.content));
+      } else {
+          setMarqueeList([]); 
       }
   }
 
@@ -219,23 +217,32 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE */}
-        <div className="sticky top-0 z-[60] bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm py-2 px-4 border-b border-white/10 shrink-0">
-             <div className="marquee-container w-full flex overflow-hidden">
-                {/* TRACK 1 */}
-                <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee">
-                    {marqueeList.map((text, i) => (
-                        <span key={`t1-${i}`}>{text}</span>
-                    ))}
-                </div>
-                {/* TRACK 2 */}
-                <div className="marquee-track flex items-center gap-12 shrink-0 min-w-full justify-around pr-12 animate-marquee" aria-hidden="true">
-                    {marqueeList.map((text, i) => (
-                        <span key={`t2-${i}`}>{text}</span>
-                    ))}
+        {/* MARQUEE - CẬP NHẬT: GLASSMORPHISM & FONT MEDIUM */}
+        {marqueeList.length > 0 && (
+            <div className="sticky top-0 z-[60] bg-black/40 backdrop-blur-md text-white font-medium text-1g sm:text-base py-3 sm:py-2 px-4 border-b border-white/10 shrink-0 shadow-lg">
+                 <div className="marquee-container w-full flex overflow-hidden select-none">
+                    {/* TRACK 1 */}
+                    <div 
+                        className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee will-change-transform"
+                        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
+                    >
+                        {marqueeList.map((text, i) => (
+                            <span key={`t1-${i}`} className="tracking-wide">{text}</span>
+                        ))}
+                    </div>
+                    {/* TRACK 2 */}
+                    <div 
+                        className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee will-change-transform" 
+                        aria-hidden="true"
+                        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
+                    >
+                        {marqueeList.map((text, i) => (
+                            <span key={`t2-${i}`} className="tracking-wide">{text}</span>
+                        ))}
+                    </div>
                 </div>
             </div>
-        </div>
+        )}
 
         {/* MAIN SCROLL CONTAINER */}
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
@@ -412,7 +419,7 @@ export default function CinematicHome() {
             </div>
         </div>
 
-        {/* WEEK MODAL - CẬP NHẬT: HIỂN THỊ RÕ RÀNG + THÊM LINH MỤC */}
+        {/* WEEK MODAL */}
         {(showWeekModal || modalVisible) && (
             <div className={`fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md transition-opacity duration-300 ${modalVisible ? 'opacity-100' : 'opacity-0'}`}>
                 <div className={`bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-2xl sm:rounded-3xl w-[95%] sm:w-full max-w-6xl max-h-[85vh] sm:max-h-[90vh] flex flex-col shadow-2xl transition-transform duration-300 ${modalVisible ? 'scale-100' : 'scale-95'}`}>
@@ -440,24 +447,17 @@ export default function CinematicHome() {
                                                 <span className="font-serif font-bold text-lg sm:text-xl text-white capitalize">{format(parseISO(date), 'EEEE', {locale: vi})}</span>
                                                 <span className={`text-[10px] sm:text-xs font-bold border border-current px-2 py-0.5 rounded-full font-mono ${isTodayDate ? 'text-gold' : 'text-white/70'}`}>{format(parseISO(date), 'dd/MM')}</span>
                                             </div>
-                                            <div className="space-y-2 sm:space-y-2"> {/* Tăng khoảng cách giữa các lễ */}
+                                            <div className="space-y-2 sm:space-y-2">
                                                 {items.length === 0 ? <p className="text-[10px] text-white/30 italic py-2 text-center">- Trống -</p> : 
                                                 items.map((ev: any) => (
                                                     <div key={ev.id} className="flex items-start gap-2 sm:gap-3 py-2 border-b border-white/5 last:border-0 group">
                                                         <div className="font-mono text-white font-bold bg-white/10 px-1.5 rounded text-xs sm:text-sm whitespace-nowrap mt-0.5">{ev.start_time.slice(0,5)}</div>
-                                                        
-                                                        {/* --- CẬP NHẬT: NỘI DUNG HIỂN THỊ RÕ RÀNG HƠN --- */}
                                                         <div className="flex-grow min-w-0">
-                                                            {/* Tên lễ: Xuống dòng, không cắt bớt */}
                                                             <div className="text-xs sm:text-sm font-bold text-white leading-tight break-words whitespace-normal">{ev.title}</div>
-                                                            
-                                                            {/* Địa điểm */}
                                                             <div className="text-[10px] sm:text-[11px] text-white/50 uppercase flex items-start gap-1 mt-1">
                                                                 <MapPin size={10} className="shrink-0 mt-0.5"/> 
                                                                 <span className="break-words whitespace-normal">{ev.location}</span>
                                                             </div>
-
-                                                            {/* NGƯỜI CỬ HÀNH (MỚI THÊM) */}
                                                             {ev.priest_name && (
                                                                 <div className="text-[10px] sm:text-[11px] text-white/40 italic mt-0.5 break-words whitespace-normal flex items-start gap-1">
                                                                     <User size={10} className="shrink-0 mt-0.5"/> 
