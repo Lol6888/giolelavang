@@ -19,8 +19,6 @@ export default function CinematicHome() {
   
   // State cho thông báo chạy (Marquee)
   const [marqueeList, setMarqueeList] = useState<string[]>([]) 
-  
-  // State để reset CSS Animation khi iPhone thức dậy
   const [animKey, setAnimKey] = useState(0)
 
   // Modal State
@@ -103,13 +101,12 @@ export default function CinematicHome() {
     return () => { supabase.removeChannel(ch) }
   }, [])
 
-  // --- CHUÔNG BÁO THỨC CHO SAFARI ---
+  // --- BÁO THỨC SAFARI (Vẫn giữ để trị bệnh mất animation) ---
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         fetchSchedules();
         fetchAnnouncements();
-        // Cập nhật key để đập đi xây lại cái chữ chạy, giúp nó không bao giờ bị kẹt
         setAnimKey(Date.now()); 
       }
     };
@@ -201,20 +198,21 @@ export default function CinematicHome() {
   
   const status = getStatus();
 
-  // --- NEW LOGIC: BACKGROUND FILTER ---
   const getBgFilter = () => {
       if (weather.code >= 51) return 'none'; 
       if (weather.code <= 3) return 'brightness(1.05) saturate(1.1)'; 
       return 'brightness(1.1) saturate(1.2)'; 
   }
 
-  // CSS CLASSES
+  // CSS CLASSES - ĐÃ THÊM OVERFLOW-HIDDEN THEO CHUẨN FIX BUG
   const widgetContainerStyle = "flex gap-3 sm:gap-4 mt-2 w-full max-w-xl mx-auto lg:mx-0"; 
-  const widgetStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center";
-  const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0";
+  const widgetStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center overflow-hidden";
+  const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0 overflow-hidden";
 
   return (
-    <div className="relative h-screen font-sans text-slate-100 overflow-hidden flex flex-col">
+    // THAY ĐỔI 1: h-screen thành h-[100dvh] + base bg-slate-900 tránh đen nền
+    <div className="relative h-[100dvh] bg-slate-900 font-sans text-slate-100 overflow-hidden flex flex-col">
+        
         {/* BACKGROUND */}
         <div 
             className="absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000"
@@ -234,29 +232,23 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - UPDATE: TÁCH LỚP KÍNH MỜ KHỎI CHỮ CHẠY ĐỂ TRỊ DỨT ĐIỂM IOS BUG */}
+        {/* MARQUEE - THAY ĐỔI 2 & 3: pt-[env...] VÀ overflow-hidden chuẩn */}
         {marqueeList.length > 0 && (
-            <div className="sticky top-0 z-[60] shrink-0 shadow-lg border-b border-white/10 relative">
-                 {/* Lớp 1: Kính mờ độc lập, hoàn toàn tĩnh lặng */}
-                 <div className="absolute inset-0 bg-black/40 backdrop-blur-md"></div>
-                 
-                 {/* Lớp 2: Nội dung chữ nổi lên trên lớp kính, chứa hiệu ứng chạy */}
-                 <div className="relative z-10 py-4 sm:py-3 px-4 text-white font-medium text-2xl sm:text-base">
-                     <div key={animKey} className="marquee-container w-full flex overflow-hidden select-none">
-                        {/* TRACK 1 */}
-                        <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee">
-                            {marqueeList.map((text, i) => (
-                                <span key={`t1-${i}`} className="tracking-wide">{text}</span>
-                            ))}
-                        </div>
-                        {/* TRACK 2 */}
-                        <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee" aria-hidden="true">
-                            {marqueeList.map((text, i) => (
-                                <span key={`t2-${i}`} className="tracking-wide">{text}</span>
-                            ))}
-                        </div>
+            <div className="sticky top-0 z-[60] w-full bg-black/40 backdrop-blur-md border-b border-white/10 pt-[env(safe-area-inset-top)] overflow-hidden shadow-lg">
+                 <div key={animKey} className="w-full flex overflow-hidden select-none py-3 sm:py-2 px-4 text-white font-medium text-1g sm:text-base relative z-10">
+                    {/* TRACK 1 */}
+                    <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee">
+                        {marqueeList.map((text, i) => (
+                            <span key={`t1-${i}`} className="tracking-wide">{text}</span>
+                        ))}
                     </div>
-                 </div>
+                    {/* TRACK 2 */}
+                    <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee" aria-hidden="true">
+                        {marqueeList.map((text, i) => (
+                            <span key={`t2-${i}`} className="tracking-wide">{text}</span>
+                        ))}
+                    </div>
+                </div>
             </div>
         )}
 
