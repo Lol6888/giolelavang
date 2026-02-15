@@ -209,10 +209,9 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - TÁCH LAYER BẢO VỆ CHỮ KHÔNG BỊ XÉN */}
+        {/* MARQUEE - TỪ BỎ BLUR ĐỂ SAFARI SỐNG SÓT BÌNH YÊN */}
         {marqueeList.length > 0 && (
-            <div className="sticky top-0 z-[60] w-full bg-black/40 backdrop-blur-md border-b border-white/10 shadow-lg pt-[env(safe-area-inset-top)]">
-                 {/* Lớp bọc an toàn có padding y để chữ thoải mái */}
+            <div className="sticky top-0 z-[60] w-full bg-black/95 border-b border-white/10 shadow-lg pt-[env(safe-area-inset-top)]">
                  <div className="relative w-full overflow-hidden flex items-center py-3.5 sm:py-3 px-4">
                      <div key={animKey} className="w-full flex select-none text-white font-bold text-xl sm:font-medium sm:text-base leading-snug">
                         <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee">
