@@ -20,7 +20,7 @@ export default function CinematicHome() {
   // State cho thông báo chạy (Marquee)
   const [marqueeList, setMarqueeList] = useState<string[]>([]) 
   
-  // NEW: State để reset CSS Animation khi iPhone thức dậy
+  // State để reset CSS Animation khi iPhone thức dậy
   const [animKey, setAnimKey] = useState(0)
 
   // Modal State
@@ -103,13 +103,13 @@ export default function CinematicHome() {
     return () => { supabase.removeChannel(ch) }
   }, [])
 
-  // --- NEW LOGIC: CHUÔNG BÁO THỨC CHO SAFARI ---
+  // --- CHUÔNG BÁO THỨC CHO SAFARI ---
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Khi người dùng quay lại web: Cập nhật dữ liệu & Reset Animation chữ chạy
         fetchSchedules();
         fetchAnnouncements();
+        // Cập nhật key để đập đi xây lại cái chữ chạy, giúp nó không bao giờ bị kẹt
         setAnimKey(Date.now()); 
       }
     };
@@ -217,15 +217,15 @@ export default function CinematicHome() {
     <div className="relative h-screen font-sans text-slate-100 overflow-hidden flex flex-col">
         {/* BACKGROUND */}
         <div 
-            className="absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000 transform-gpu"
-            style={{ filter: getBgFilter(), WebkitBackfaceVisibility: 'hidden' }}
+            className="absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000"
+            style={{ filter: getBgFilter() }}
         ></div>
         <div className="absolute inset-0 bg-black/40 z-0"></div>
         <canvas ref={canvasRef} className="absolute inset-0 z-1 pointer-events-none"></canvas>
         
         {/* SUN RAYS */}
         {weather.code <= 3 && (
-            <div className="absolute inset-0 z-1 pointer-events-none transform-gpu" style={{ WebkitBackfaceVisibility: 'hidden' }}>
+            <div className="absolute inset-0 z-1 pointer-events-none">
                 <div className="ray_box">
                     <div className="ray" style={{height:'600px', width:'100px', transform:'rotate(180deg)', top:'-300px', left:'0'}}></div>
                     <div className="ray" style={{height:'700px', width:'100px', transform:'rotate(220deg)', top:'-300px', left:'50px'}}></div>
@@ -234,24 +234,29 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MARQUEE - UPDATE: ĐÁP ỨNG THỜI GIAN THỰC & CHỐNG CHẾT CSS TẠI ĐÂY */}
+        {/* MARQUEE - UPDATE: TÁCH LỚP KÍNH MỜ KHỎI CHỮ CHẠY ĐỂ TRỊ DỨT ĐIỂM IOS BUG */}
         {marqueeList.length > 0 && (
-            <div className="sticky top-0 z-[60] bg-black/40 backdrop-blur-md text-white font-medium text-2xl sm:text-1g sm:text-base py-3 sm:py-2 px-4 border-b border-white/10 shrink-0 shadow-lg transform-gpu" style={{ WebkitBackfaceVisibility: 'hidden' }}>
-                 {/* key={animKey} SẼ ÉP TRÌNH DUYỆT ĐẬP ĐI XÂY LẠI KHỐI NÀY KHI BẬT MÀN HÌNH */}
-                 <div key={animKey} className="marquee-container w-full flex overflow-hidden select-none">
-                    {/* TRACK 1 */}
-                    <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee">
-                        {marqueeList.map((text, i) => (
-                            <span key={`t1-${i}`} className="tracking-wide">{text}</span>
-                        ))}
+            <div className="sticky top-0 z-[60] shrink-0 shadow-lg border-b border-white/10 relative">
+                 {/* Lớp 1: Kính mờ độc lập, hoàn toàn tĩnh lặng */}
+                 <div className="absolute inset-0 bg-black/40 backdrop-blur-md"></div>
+                 
+                 {/* Lớp 2: Nội dung chữ nổi lên trên lớp kính, chứa hiệu ứng chạy */}
+                 <div className="relative z-10 py-4 sm:py-3 px-4 text-white font-medium text-2xl sm:text-base">
+                     <div key={animKey} className="marquee-container w-full flex overflow-hidden select-none">
+                        {/* TRACK 1 */}
+                        <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee">
+                            {marqueeList.map((text, i) => (
+                                <span key={`t1-${i}`} className="tracking-wide">{text}</span>
+                            ))}
+                        </div>
+                        {/* TRACK 2 */}
+                        <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee" aria-hidden="true">
+                            {marqueeList.map((text, i) => (
+                                <span key={`t2-${i}`} className="tracking-wide">{text}</span>
+                            ))}
+                        </div>
                     </div>
-                    {/* TRACK 2 */}
-                    <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee" aria-hidden="true">
-                        {marqueeList.map((text, i) => (
-                            <span key={`t2-${i}`} className="tracking-wide">{text}</span>
-                        ))}
-                    </div>
-                </div>
+                 </div>
             </div>
         )}
 
