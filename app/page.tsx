@@ -5,7 +5,6 @@ import { format, parseISO, addDays, isSameDay, differenceInSeconds } from 'date-
 import { vi } from 'date-fns/locale'
 import { Clock, MapPin, Calendar, Sun, CloudRain, X, Loader2, User } from 'lucide-react'
 
-// --- TYPES ---
 type Schedule = {
   id: number; date: string; start_time: string; title: string; priest_name: string; note: string; location: string; video_url?: string;
 }
@@ -16,29 +15,48 @@ export default function CinematicHome() {
   const [nextDaySchedule, setNextDaySchedule] = useState<Schedule | null>(null)
   const [now, setNow] = useState(new Date())
   const [weather, setWeather] = useState({ temp: 28, code: 0, desc: 'Đang tải...' })
-  
-  // State cho thông báo chạy (Marquee)
   const [marqueeList, setMarqueeList] = useState<string[]>([]) 
-
-  // Logic chống lỗi tối ưu iOS
   const [animKey, setAnimKey] = useState(0)
+  
+  // --- CHIẾN THUẬT HARDCORE ---
+  const [isIOS, setIsIOS] = useState(false)
   const lastActiveTime = useRef(Date.now())
 
-  // Modal State
   const [showWeekModal, setShowWeekModal] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [loadingWeek, setLoadingWeek] = useState(false)
-  
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // --- CONFIG ---
   const MASS_DURATION_MINUTES = 30; 
   const COUNTDOWN_THRESHOLD_MINUTES = 15; 
 
-  // --- LOGIC ---
+  // 1. Nhận diện iPhone/iPad ngay khi load
+  useEffect(() => {
+    const checkIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    setIsIOS(checkIOS);
+  }, []);
+
+  // 2. Ép tải lại trang ngay lập tức nếu vắng mặt > 60 giây (Chống treo GPU Safari)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const secondsPassed = (Date.now() - lastActiveTime.current) / 1000;
+        if (secondsPassed > 60) {
+          window.location.reload(); 
+        } else {
+          setAnimKey(Date.now());
+          lastActiveTime.current = Date.now();
+        }
+      } else {
+        lastActiveTime.current = Date.now();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t) }, [])
 
-  // Fetch Weather
   useEffect(() => {
     async function fetchWeather() {
       try {
@@ -55,25 +73,19 @@ export default function CinematicHome() {
     fetchWeather(); setInterval(fetchWeather, 600000)
   }, [])
 
-  // Fetch Schedules & Announcements
   const fetchSchedules = async () => {
     const todayStr = format(new Date(), 'yyyy-MM-dd')
     const tomorrowStr = format(addDays(new Date(), 1), 'yyyy-MM-dd')
-
     const { data: todayData } = await supabase.from('schedules').select('*').eq('date', todayStr).order('start_time')
     if (todayData) setSchedules(todayData)
-
     const { data: tomorrowData } = await supabase.from('schedules').select('*').eq('date', tomorrowStr).order('start_time').limit(1).single()
     if (tomorrowData) setNextDaySchedule(tomorrowData)
   }
 
   const fetchAnnouncements = async () => {
       const { data } = await supabase.from('announcements').select('content').eq('is_active', true).order('id');
-      if (data && data.length > 0) {
-          setMarqueeList(data.map(item => item.content));
-      } else {
-          setMarqueeList([]); 
-      }
+      if (data && data.length > 0) setMarqueeList(data.map(item => item.content));
+      else setMarqueeList([]);
   }
 
   const fetchWeekSchedules = async () => {
@@ -85,43 +97,20 @@ export default function CinematicHome() {
       setLoadingWeek(false);
   }
 
-  // Realtime Subscription
   useEffect(() => {
     fetchSchedules(); fetchAnnouncements();
     const ch = supabase.channel('home')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, () => {
-        fetchSchedules(); if(showWeekModal) fetchWeekSchedules();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
-        fetchAnnouncements(); 
-    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, () => { fetchSchedules(); if(showWeekModal) fetchWeekSchedules(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => { fetchAnnouncements(); })
     .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [])
 
-  // --- AUTO REFRESH & BÁO THỨC SAFARI ---
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        const currentTime = Date.now();
-        const hoursPassed = (currentTime - lastActiveTime.current) / (1000 * 60 * 60);
-        if (hoursPassed > 2) { window.location.reload(); return; }
-        fetchSchedules(); fetchAnnouncements();
-        setAnimKey(currentTime); 
-        lastActiveTime.current = currentTime;
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
-
-  // Modal Animation
   useEffect(() => {
       if(showWeekModal) { fetchWeekSchedules(); setModalVisible(true); }
       else { setTimeout(() => setModalVisible(false), 300); }
   }, [showWeekModal])
 
-  // Canvas Rain
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas || weather.code < 51) return;
     const ctx = canvas.getContext('2d'); if(!ctx) return;
@@ -137,18 +126,6 @@ export default function CinematicHome() {
     draw();
   }, [weather.code])
 
-  // --- HELPERS ---
-  const getCountdownString = (targetTimeStr: string) => {
-      const [h, m] = targetTimeStr.split(':').map(Number);
-      const target = new Date(now);
-      target.setHours(h, m, 0, 0);
-      let diffSec = differenceInSeconds(target, now);
-      if (diffSec < 0) return "00:00"; 
-      const minutes = Math.floor(diffSec / 60);
-      const seconds = diffSec % 60;
-      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  }
-
   const getStatus = () => {
     const timeStr = format(now, 'HH:mm:ss');
     const current = schedules.find(s => {
@@ -163,7 +140,12 @@ export default function CinematicHome() {
         const target = new Date(now); const [h, m] = next.start_time.split(':').map(Number);
         target.setHours(h, m, 0, 0);
         const diffMinutes = (target.getTime() - now.getTime()) / 60000;
-        if (diffMinutes <= COUNTDOWN_THRESHOLD_MINUTES) return { type: 'countdown', item: next, diffString: getCountdownString(next.start_time) };
+        if (diffMinutes <= COUNTDOWN_THRESHOLD_MINUTES) {
+            const diffSec = differenceInSeconds(target, now);
+            const mm = Math.floor(diffSec / 60).toString().padStart(2, '0');
+            const ss = (diffSec % 60).toString().padStart(2, '0');
+            return { type: 'countdown', item: next, diffString: `${mm}:${ss}` };
+        }
         return { type: 'upcoming', item: next, isTomorrow: false };
     }
     if (nextDaySchedule) return { type: 'upcoming', item: nextDaySchedule, isTomorrow: true };
@@ -172,32 +154,22 @@ export default function CinematicHome() {
   
   const status = getStatus();
 
-  // --- STYLES ---
-  const widgetStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center overflow-hidden";
-  const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0 overflow-hidden";
+  // --- HỆ THỐNG STYLE "HẠT NHÂN" ---
+  // Nếu là iOS, dẹp bỏ hoàn toàn backdrop-blur để cứu GPU
+  const glassClass = isIOS ? "bg-black/85" : "bg-black/40 backdrop-blur-md";
+  const cardStyle = `${glassClass} border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0 overflow-hidden`;
+  const widgetStyle = `${glassClass} border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center overflow-hidden`;
 
   return (
-    // FIX CHÍNH: h-[100dvh] cho iOS viewport và 'isolate' cô lập layer
     <div className="relative h-[100dvh] bg-slate-900 font-sans text-slate-100 overflow-hidden flex flex-col isolate">
-        
-        {/* BACKGROUND */}
-        <div className="absolute inset-0 bg-basilica bg-cover bg-center animate-ken-burns z-0 transition-all duration-1000"></div>
+        {/* BACKGROUND - CHỐNG ĐEN NỀN BẰNG CÁCH DÙNG BACKGROUND TĨNH NẾU LÀ IOS */}
+        <div className="absolute inset-0 bg-basilica bg-cover bg-center z-0 animate-ken-burns"></div>
         <div className="absolute inset-0 bg-black/40 z-0"></div>
         <canvas ref={canvasRef} className="absolute inset-0 z-1 pointer-events-none"></canvas>
-        
-        {weather.code <= 3 && (
-            <div className="absolute inset-0 z-1 pointer-events-none">
-                <div className="ray_box">
-                    <div className="ray" style={{height:'600px', width:'100px', transform:'rotate(180deg)', top:'-300px', left:'0'}}></div>
-                    <div className="ray" style={{height:'700px', width:'100px', transform:'rotate(220deg)', top:'-300px', left:'50px'}}></div>
-                    <div className="ray" style={{height:'800px', width:'100px', transform:'rotate(300deg)', top:'-300px', left:'100px'}}></div>
-                </div>
-            </div>
-        )}
 
-        {/* MARQUEE - THEO ĐÚNG YÊU CẦU: Kính mờ, text-lg sm:text-base, py-3 sm:py-2 */}
+        {/* MARQUEE - KHÔNG BLUR TRÊN IOS ĐỂ TRÁNH CỤC ĐEN */}
         {marqueeList.length > 0 && (
-            <div className="sticky top-0 z-[60] w-full bg-black/40 backdrop-blur-md border-b border-white/10 pt-[env(safe-area-inset-top)] shadow-lg">
+            <div className={`sticky top-0 z-[60] w-full border-b border-white/10 shadow-lg pt-[env(safe-area-inset-top)] isolate ${isIOS ? 'bg-black' : 'bg-black/40 backdrop-blur-md'}`}>
                  <div className="relative w-full overflow-hidden flex items-center py-3 sm:py-2 px-4">
                      <div key={animKey} className="w-full flex select-none text-white font-medium text-lg sm:text-base leading-snug">
                         <div className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee">
@@ -211,13 +183,11 @@ export default function CinematicHome() {
             </div>
         )}
 
-        {/* MAIN CONTAINER */}
+        {/* MAIN CONTENT */}
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
             <div className="max-w-[1800px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0">
-                
                 <div className="lg:hidden w-full h-[45vh] shrink-0 pointer-events-none"></div>
 
-                {/* LEFT COLUMN */}
                 <div className="lg:col-span-7 h-auto lg:h-full relative flex flex-col justify-end order-1 lg:pl-4 lg:pb-12">
                      <div className="h-full flex flex-col justify-end items-start gap-2">
                         {status.type === 'happening' && status.item && (
@@ -234,13 +204,13 @@ export default function CinematicHome() {
                                 <div className="bg-gold text-marian-dark font-bold text-xs px-3 py-1 rounded inline-block mb-3 uppercase shadow-lg">Sắp diễn ra</div>
                                 <h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-3 text-shadow">{status.item.title}</h1>
                                 <div className="flex items-center gap-2 mb-4 text-white/90"><MapPin size={14} className="text-gold"/><span className="text-xs sm:text-sm font-bold uppercase">{status.item.location}</span></div>
-                                <div className="bg-black/30 rounded-xl p-4 border border-white/10 mb-1 w-full text-center lg:text-left"><div className="text-[10px] text-white/60 uppercase mb-1 font-bold">Thời gian còn lại</div><div className="font-mono text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tighter">{status.diffString}</div></div>
+                                <div className="bg-black/30 rounded-xl p-4 border border-white/10 mb-1 w-full text-center lg:text-left"><div className="text-[10px] text-white/60 uppercase mb-1 font-bold tracking-widest">Thời gian còn lại</div><div className="font-mono text-4xl sm:text-5xl lg:text-6xl font-bold text-white tabular-nums tracking-tighter">{status.diffString}</div></div>
                             </div>
                         )}
                         {status.type === 'upcoming' && status.item && (
                             <div className={cardStyle}>
                                 <div className="flex items-center gap-2 mb-3"><div className={`w-2 h-2 rounded-full ${status.isTomorrow ? 'bg-blue-400' : 'bg-green-400'}`}></div><span className="text-xs font-bold uppercase tracking-widest">{status.isTomorrow ? 'Lễ ngày mai' : 'Sẵn sàng'}</span></div>
-                                <div className="mb-4"><div className="text-gold-light text-xs uppercase mb-4 font-bold tracking-widest">Thánh Lễ Kế Tiếp</div><h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-6xl text-white text-shadow">{status.item.title}</h1></div>
+                                <div className="mb-4"><div className="text-gold-light text-xs uppercase mb-4 font-bold tracking-[0.2em]">Thánh Lễ Kế Tiếp</div><h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-6xl text-white text-shadow leading-tight">{status.item.title}</h1></div>
                                 <div className="flex gap-6 border-t border-white/20 pt-4"><div><div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div><div className="text-xl sm:text-2xl font-bold text-white font-mono">{status.item.start_time.slice(0,5)}{status.isTomorrow && <span className="text-xs text-white/50 ml-1">(Ngày mai)</span>}</div></div><div className="w-px bg-white/20"></div><div><div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Địa điểm</div><div className="text-xl sm:text-2xl font-serif italic text-white">{status.item.location}</div></div></div>
                             </div>
                         )}
@@ -249,18 +219,17 @@ export default function CinematicHome() {
                         )}
                         <div className="flex gap-3 sm:gap-4 mt-2 w-full max-w-xl mx-auto lg:mx-0">
                             <div className={widgetStyle}>{weather.code >= 51 ? <CloudRain className="text-blue-400 w-8 h-8"/> : <Sun className="text-yellow-400 w-8 h-8"/>}<div><div className="text-xl sm:text-2xl font-bold text-white font-mono">{weather.temp}°C</div><div className="text-[10px] sm:text-xs text-white/70 uppercase font-bold">{weather.desc}</div></div></div>
-                            <div className={widgetStyle}><Clock className="text-white/60 w-6 h-6"/><div className="text-2xl sm:text-3xl font-bold font-mono text-white">{format(now, 'HH:mm')}</div></div>
+                            <div className={widgetStyle}><Clock className="text-white/60 w-6 h-6"/><div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-widest">{format(now, 'HH:mm')}</div></div>
                         </div>
                      </div>
                 </div>
 
-                {/* RIGHT COLUMN */}
                 <div className="lg:col-span-5 h-auto flex flex-col order-2">
-                    <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl isolate">
+                    <div className={`${glassClass} border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl isolate`}>
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-center gap-4 flex-none">
                             <h2 className="font-serif text-2xl sm:text-xl font-bold text-white">Thánh Lễ hôm nay</h2>
                             <div className="flex items-center gap-3 w-full sm:w-auto">
-                                <button onClick={() => setShowWeekModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gold/20 py-2 px-4 rounded-full transition active:scale-95"><Calendar size={16} className="text-gold"/><span className="text-xs font-bold text-gold uppercase">Lịch Tuần</span></button>
+                                <button onClick={() => setShowWeekModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gold/20 py-2 px-4 rounded-full active:scale-95"><Calendar size={16} className="text-gold"/><span className="text-xs font-bold text-gold uppercase">Lịch Tuần</span></button>
                                 <span className="flex-1 sm:flex-none text-center text-xs font-bold text-white/80 bg-white/10 py-2 px-4 rounded-full font-mono">{format(now, 'dd/MM/yyyy', {locale: vi})}</span>
                             </div>
                         </div>
@@ -278,7 +247,7 @@ export default function CinematicHome() {
                                     return (
                                         <div key={ev.id} className={rowClass}>
                                             <div className={`w-16 text-right text-2xl font-mono ${isHappening ? 'text-red-400 font-bold' : 'text-white'}`}>{ev.start_time.slice(0,5)}</div>
-                                            <div className="flex-grow min-w-0">
+                                            <div className="flex-grow min-w-0 pl-2">
                                                 <div className={`text-lg sm:text-2xl font-serif mb-1 ${isHappening ? 'text-white font-bold' : 'text-white/90'}`}>{ev.title}</div>
                                                 <div className="text-xs text-white/70 uppercase font-bold flex items-center gap-1"><MapPin size={12}/>{ev.location}</div>
                                                 <div className="text-xs text-white/60 italic mt-0.5">{ev.priest_name}</div>
@@ -296,11 +265,11 @@ export default function CinematicHome() {
 
         {/* WEEK MODAL */}
         {(showWeekModal || modalVisible) && (
-            <div className={`fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-opacity duration-300 ${modalVisible ? 'opacity-100' : 'opacity-0'} isolate`}>
-                <div className={`bg-slate-900/90 border border-white/20 rounded-3xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl transition-transform duration-300 ${modalVisible ? 'scale-100' : 'scale-95'}`}>
+            <div className={`fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/85 transition-opacity duration-300 ${modalVisible ? 'opacity-100' : 'opacity-0'} isolate`}>
+                <div className={`bg-slate-900 border border-white/20 rounded-3xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl transition-transform duration-300 ${modalVisible ? 'scale-100' : 'scale-95'}`}>
                     <div className="flex justify-between items-center p-6 border-b border-white/10">
                         <div><h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">Lịch 7 ngày tới</h2></div>
-                        <button onClick={() => setShowWeekModal(false)} className="p-2 bg-white/10 rounded-full hover:bg-red-600/80 transition"><X size={24}/></button>
+                        <button onClick={() => setShowWeekModal(false)} className="p-2 bg-white/10 rounded-full active:scale-90"><X size={24}/></button>
                     </div>
                     <div className="overflow-y-auto p-6 bg-black/20 custom-scrollbar">
                         {loadingWeek ? <div className="h-40 flex items-center justify-center"><Loader2 className="animate-spin text-gold" size={32}/></div> : 
