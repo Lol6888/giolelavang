@@ -1,30 +1,30 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { NextResponse } from 'next/server';
 
+// --- THÊM DÒNG NÀY ĐỂ ÉP CHẠY REALTIME TRÊN VERCEL ---
+export const dynamic = 'force-dynamic'; 
+
 export async function GET() {
-  // 1. Lấy biến môi trường vào trong hàm để tránh lỗi build static
   const propertyId = process.env.GA4_PROPERTY_ID;
   const email = process.env.GOOGLE_CLIENT_EMAIL;
   const key = process.env.GOOGLE_PRIVATE_KEY;
 
-  // 2. Kiểm tra kỹ, nếu thiếu 1 trong 3 thì báo lỗi ngay (để TypeScript không bắt bẻ)
   if (!propertyId || !email || !key) {
     return NextResponse.json(
-      { error: 'Chưa cấu hình đủ biến môi trường (GA4_ID, EMAIL, KEY)' }, 
+      { error: 'Chưa cấu hình đủ biến môi trường trên Vercel' }, 
       { status: 500 }
     );
   }
 
   try {
-    // 3. Khởi tạo client khi đã chắc chắn có đủ thông tin
     const analyticsDataClient = new BetaAnalyticsDataClient({
       credentials: {
         client_email: email,
-        private_key: key.replace(/\\n/g, '\n'), // Xử lý xuống dòng
+        private_key: key.replace(/\\n/g, '\n'),
       },
     });
 
-    // --- Gọi báo cáo Realtime (Người đang online) ---
+    // 1. Realtime Report
     const [realtimeResponse] = await analyticsDataClient.runRealtimeReport({
       property: `properties/${propertyId}`,
       metrics: [{ name: 'activeUsers' }],
@@ -34,7 +34,7 @@ export async function GET() {
       return acc + Number(row.metricValues?.[0]?.value || 0);
     }, 0) || 0;
 
-    // --- Gọi báo cáo 7 ngày (Tổng quan) ---
+    // 2. Basic Report
     const [basicResponse] = await analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
       dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
@@ -48,12 +48,17 @@ export async function GET() {
       activeUsers,
       totalUsers7Days,
       totalViews7Days
+    }, {
+      // Thêm headers cấm cache cho chắc ăn
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
     });
 
   } catch (error: any) {
-    console.error('Lỗi GA4 API:', error);
+    console.error('GA4 API Error:', error);
     return NextResponse.json(
-      { error: error.message || 'Lỗi lấy dữ liệu Analytics' }, 
+      { error: error.message || 'Lỗi kết nối GA4' }, 
       { status: 500 }
     );
   }
