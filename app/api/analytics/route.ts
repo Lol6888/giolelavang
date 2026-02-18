@@ -1,7 +1,6 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { NextResponse } from 'next/server';
 
-// --- THÊM DÒNG NÀY ĐỂ ÉP CHẠY REALTIME TRÊN VERCEL ---
 export const dynamic = 'force-dynamic'; 
 
 export async function GET() {
@@ -10,10 +9,7 @@ export async function GET() {
   const key = process.env.GOOGLE_PRIVATE_KEY;
 
   if (!propertyId || !email || !key) {
-    return NextResponse.json(
-      { error: 'Chưa cấu hình đủ biến môi trường trên Vercel' }, 
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Thiếu biến môi trường' }, { status: 500 });
   }
 
   try {
@@ -24,7 +20,7 @@ export async function GET() {
       },
     });
 
-    // 1. Realtime Report
+    // 1. Realtime (Người đang online)
     const [realtimeResponse] = await analyticsDataClient.runRealtimeReport({
       property: `properties/${propertyId}`,
       metrics: [{ name: 'activeUsers' }],
@@ -34,32 +30,25 @@ export async function GET() {
       return acc + Number(row.metricValues?.[0]?.value || 0);
     }, 0) || 0;
 
-    // 2. Basic Report
+    // 2. All Time Report (Tổng truy cập từ năm 2020 đến nay)
     const [basicResponse] = await analyticsDataClient.runReport({
       property: `properties/${propertyId}`,
-      dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
-      metrics: [{ name: 'activeUsers' }, { name: 'screenPageViews' }],
+      // Thay đổi ở đây: Lấy từ 2025-01-01 đến hôm nay
+      dateRanges: [{ startDate: '2025-01-01', endDate: 'today' }], 
+      metrics: [{ name: 'totalUsers' }], // Dùng metric 'totalUsers' chuẩn hơn cho All Time
     });
 
-    const totalUsers7Days = basicResponse.rows?.[0]?.metricValues?.[0]?.value || 0;
-    const totalViews7Days = basicResponse.rows?.[0]?.metricValues?.[1]?.value || 0;
+    const totalUsers = basicResponse.rows?.[0]?.metricValues?.[0]?.value || 0;
 
     return NextResponse.json({
       activeUsers,
-      totalUsers7Days,
-      totalViews7Days
+      totalUsers, // Trả về biến tên là totalUsers
     }, {
-      // Thêm headers cấm cache cho chắc ăn
-      headers: {
-        'Cache-Control': 'no-store, max-age=0',
-      },
+      headers: { 'Cache-Control': 'no-store, max-age=0' },
     });
 
   } catch (error: any) {
-    console.error('GA4 API Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Lỗi kết nối GA4' }, 
-      { status: 500 }
-    );
+    console.error('GA4 Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
