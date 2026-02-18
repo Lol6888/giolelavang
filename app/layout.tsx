@@ -1,6 +1,8 @@
 import './globals.css'
 import type { Metadata, Viewport } from 'next' // Import Viewport
 import { Be_Vietnam_Pro, Playfair_Display, Montserrat } from 'next/font/google'
+import Script from 'next/script' 
+import './globals.css'
 
 const vietnam = Be_Vietnam_Pro({ 
   subsets: ['latin', 'vietnamese'], 
@@ -40,6 +42,20 @@ export default function RootLayout({
     <html lang="vi">
       <body className={`${vietnam.variable} ${playfair.variable} ${montserrat.variable} font-sans bg-black text-slate-100 overflow-hidden`}>
         {children}
+
+        {/* --- GOOGLE ANALYTICS 4 (GA4) --- */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-P9BP8B5DJY"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-P9BP8B5DJY');
+          `}
+        </Script>
       </body>
     </html>
   )
