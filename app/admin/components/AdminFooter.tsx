@@ -1,4 +1,3 @@
-// app/admin/components/AdminFooter.tsx
 'use client'
 import { useEffect, useState } from 'react'
 import { Users, Eye, Loader2, Activity } from 'lucide-react'
@@ -10,36 +9,37 @@ export default function AdminFooter() {
   useEffect(() => {
     async function fetchGA4() {
       try {
-        const res = await fetch('/api/analytics') // Gọi về server của mình
+        const res = await fetch('/api/analytics')
         const data = await res.json()
+        
+        // --- DÒNG LOG ĐỂ KIỂM TRA ---
+        console.log("Dữ liệu GA4 nhận được:", data) 
+
         if (data && !data.error) {
           setStats(data)
         }
       } catch (e) {
-        console.error("Lỗi GA4:", e)
+        console.error("Lỗi Client GA4:", e)
       } finally {
         setLoading(false)
       }
     }
 
     fetchGA4()
-    
-    // Cập nhật số liệu Realtime mỗi 30 giây
-    const interval = setInterval(fetchGA4, 30000)
+    const interval = setInterval(fetchGA4, 30000) // 30s update 1 lần
     return () => clearInterval(interval)
   }, [])
 
+  // Nếu đang loading thì hiện text mờ, có dữ liệu thì hiện rõ
   return (
-    <footer className="w-full bg-slate-900 border-t border-slate-800 py-3 px-6 text-xs text-slate-400 mt-auto">
+    <footer className="w-full bg-slate-900 border-t border-slate-800 py-3 px-6 text-xs text-slate-400 mt-auto z-50">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 max-w-7xl mx-auto">
         
-        {/* Bên trái: Copyright */}
         <div className="font-mono">
           © 2024 <span className="text-slate-200 font-bold">LAVANG System</span>
         </div>
 
-        {/* Bên phải: Thông số GA4 */}
-        <div className="flex items-center gap-6 bg-black/40 px-4 py-1.5 rounded-full border border-white/5">
+        <div className="flex items-center gap-6 bg-black/40 px-4 py-1.5 rounded-full border border-white/5 shadow-lg">
           
           {/* Active Users */}
           <div className="flex items-center gap-2" title="Đang online (30p)">
@@ -56,7 +56,7 @@ export default function AdminFooter() {
           <div className="w-px h-3 bg-slate-700"></div>
 
           {/* Users 7 Days */}
-          <div className="flex items-center gap-2" title="Khách 7 ngày qua">
+          <div className="flex items-center gap-2">
             <Users className="w-3 h-3 text-blue-400" />
             <span className="font-bold text-slate-200 font-mono">
               {loading ? '...' : stats.totalUsers7Days}
@@ -67,7 +67,7 @@ export default function AdminFooter() {
           <div className="w-px h-3 bg-slate-700"></div>
 
           {/* Views 7 Days */}
-          <div className="flex items-center gap-2" title="Lượt xem 7 ngày qua">
+            <div className="flex items-center gap-2">
             <Eye className="w-3 h-3 text-purple-400" />
             <span className="font-bold text-slate-200 font-mono">
               {loading ? '...' : stats.totalViews7Days}
