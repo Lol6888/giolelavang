@@ -1,14 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Users, Loader2 } from 'lucide-react'
+import { BarChart3, Calendar, Clock, Loader2 } from 'lucide-react'
 
 export default function AdminFooter() {
-  // Update state để khớp với API mới (totalUsers)
-  const [stats, setStats] = useState<any>({ activeUsers: 0, totalUsers: 0 })
+  const [stats, setStats] = useState({ total: 0, month: 0, today: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchGA4() {
+    async function fetchData() {
       try {
         const res = await fetch('/api/analytics')
         const data = await res.json()
@@ -19,45 +18,65 @@ export default function AdminFooter() {
         setLoading(false)
       }
     }
-    fetchGA4()
-    const interval = setInterval(fetchGA4, 30000)
-    return () => clearInterval(interval)
+    fetchData()
   }, [])
 
+  // Hàm format số cho đẹp (1000 -> 1,000)
+  const fmt = (n: any) => new Intl.NumberFormat('en-US').format(Number(n));
+
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-[9999] bg-slate-900/90 backdrop-blur-md border-t border-slate-700/50 py-2 px-4 shadow-2xl">
-      <div className="flex justify-between items-center max-w-7xl mx-auto">
+    <footer className="fixed bottom-0 left-0 right-0 z-[9999] bg-slate-900/95 backdrop-blur-md border-t border-slate-700/50 py-2 px-6 shadow-2xl text-xs">
+      <div className="flex flex-col sm:flex-row justify-between items-center max-w-7xl mx-auto gap-2 sm:gap-0">
         
         {/* Copyright */}
-        <div className="text-[10px] text-slate-500 font-mono hidden sm:block">
+        <div className="text-slate-500 font-mono hidden md:block">
           LAVANG SYSTEM
         </div>
 
-        {/* Khu vực hiển thị thông số */}
-        <div className="flex items-center gap-4 w-full sm:w-auto justify-center sm:justify-end">
+        {/* 3 Chỉ số quan trọng */}
+        <div className="flex items-center gap-4 sm:gap-8 w-full sm:w-auto justify-between sm:justify-end">
           
-          {/* 1. ĐANG ONLINE */}
-          <div className="flex items-center gap-2 bg-green-950/40 px-3 py-1 rounded-full border border-green-500/20 shadow-[0_0_10px_rgba(34,197,94,0.1)]">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            </span>
-            <span className="font-bold text-green-400 font-mono text-sm">
-              {loading ? <Loader2 className="w-3 h-3 animate-spin"/> : stats.activeUsers}
-            </span>
-            <span className="text-[9px] text-green-500/80 uppercase font-bold tracking-wider ml-1">Online</span>
+          {/* 1. Tổng cộng */}
+          <div className="flex items-center gap-2 group">
+            <div className="p-1.5 rounded-full bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition">
+              <BarChart3 className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-slate-200 font-mono text-[13px]">
+                {loading ? '...' : fmt(stats.total)}
+              </span>
+              <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wide">Tổng cộng</span>
+            </div>
           </div>
 
-          <div className="w-px h-4 bg-slate-700/50"></div>
+          <div className="w-px h-6 bg-slate-800 hidden sm:block"></div>
 
-          {/* 2. TỔNG KHÁCH (ALL TIME) */}
-          <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity cursor-default" title="Tổng số người dùng từ trước đến nay">
-            <Users className="w-3.5 h-3.5 text-blue-400" />
-            <span className="font-bold text-slate-200 font-mono text-xs">
-              {loading ? '...' : stats.totalUsers}
-            </span>
-            {/* Đổi label thành Tổng khách */}
-            <span className="text-[9px] text-slate-500 uppercase font-bold">Tổng khách</span>
+          {/* 2. Trong tháng */}
+          <div className="flex items-center gap-2 group">
+             <div className="p-1.5 rounded-full bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition">
+              <Calendar className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-slate-200 font-mono text-[13px]">
+                {loading ? '...' : fmt(stats.month)}
+              </span>
+              <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wide">Trong tháng</span>
+            </div>
+          </div>
+
+          <div className="w-px h-6 bg-slate-800 hidden sm:block"></div>
+
+          {/* 3. Hôm nay */}
+          <div className="flex items-center gap-2 group">
+             <div className="p-1.5 rounded-full bg-green-500/10 text-green-400 group-hover:bg-green-500/20 transition">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-slate-200 font-mono text-[13px]">
+                 {loading ? <Loader2 className="w-3 h-3 animate-spin"/> : fmt(stats.today)}
+              </span>
+              <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wide">Hôm nay</span>
+            </div>
           </div>
 
         </div>
