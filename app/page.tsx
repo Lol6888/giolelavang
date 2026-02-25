@@ -248,7 +248,7 @@ export default function CinematicHome() {
       return 'brightness(1.1) saturate(1.2)'; 
   }
 
-  // CSS CLASSES - Chỉnh lại text-left và mx-auto
+  // CSS CLASSES
   const widgetContainerStyle = "flex gap-3 sm:gap-4 mt-2 w-full max-w-xl mx-auto shrink-0"; 
   const widgetStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center";
   const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 animate-fade-in w-full max-w-xl mx-auto shrink-0 flex flex-col text-left";
@@ -304,7 +304,8 @@ export default function CinematicHome() {
 
         {/* MAIN SCROLL CONTAINER */}
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
-            <div className="max-w-6xl mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0 relative justify-center">
+            {/* THAY ĐỔI 1: Tăng độ rộng khung chứa từ max-w-6xl lên max-w-[1400px] để thoáng hơn */}
+            <div className="max-w-[1400px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0 relative justify-center">
                 
                 {/* SPACER MOBILE */}
                 <div className="lg:hidden w-full h-[45vh] shrink-0 pointer-events-none"></div>
@@ -327,8 +328,8 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-6 sm:gap-8 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-6 sm:pt-8 border-t border-white/10" : ""}`}>
-                                            {/* SỬA 1: leading-snug thay vì leading-tight */}
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} leading-snug text-white mb-4 sm:mb-5 text-shadow`}>
+                                            {/* THAY ĐỔI 2: Hạ text size và dùng leading-normal để dãn khoảng cách dòng */}
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} leading-normal text-white mb-4 sm:mb-5 text-shadow`}>
                                                 {item.title}
                                             </h1>
                                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
@@ -366,8 +367,7 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-5 sm:gap-6 mb-6 sm:mb-8 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}`}>
-                                            {/* SỬA 1: leading-snug */}
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white mb-4 sm:mb-5 text-shadow leading-snug`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} text-white mb-4 sm:mb-5 text-shadow leading-normal`}>
                                                 {item.title}
                                             </h1>
                                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
@@ -414,8 +414,7 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-5 sm:gap-6 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}`}>
-                                            {/* SỬA 1: leading-snug */}
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-snug mb-4 sm:mb-5`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} text-white text-shadow leading-normal mb-4 sm:mb-5`}>
                                                 {item.title}
                                             </h1>
                                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
@@ -496,7 +495,6 @@ export default function CinematicHome() {
         const isHappening = timeStr >= ev.start_time && timeStr < endStr;
         const isUpcoming = timeStr < ev.start_time;
 
-        // SỬA 2: Thêm class relative để absolute badge chuẩn góc
         let rowClass = "flex items-center gap-3 sm:gap-6 py-5 px-4 sm:py-6 sm:px-6 rounded-2xl transition-all border border-transparent group relative ";
         
         if (isHappening) {
@@ -519,19 +517,19 @@ export default function CinematicHome() {
                 </div>
 
                 <div className="flex-grow min-w-0 pl-2 sm:pl-2 pr-6 sm:pr-10">
-                    {/* SỬA 1: leading-snug cho title */}
-                    <div className={`text-lg sm:text-2xl text-shadow-light font-serif leading-snug mb-1
+                    {/* THAY ĐỔI 3: Giảm size chữ và tăng dãn dòng cho list bên phải bằng leading-normal */}
+                    <div className={`text-lg sm:text-xl lg:text-2xl text-shadow-light font-serif leading-normal mb-1.5
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
                         {ev.title}
                     </div>
-                    <div className="flex items-start gap-1.5 text-xs sm:text-base text-white/70 uppercase font-bold tracking-wider">
-                        <MapPin size={12} className="shrink-0 mt-0.5 sm:mt-1"/>
+                    <div className="flex items-start gap-1.5 text-xs sm:text-base text-white/70 uppercase font-bold tracking-wider mb-1">
+                        <MapPin size={14} className="shrink-0 mt-0.5 sm:mt-0"/>
                         <span className="leading-snug">{ev.location}</span>
                     </div>
-                    <div className="text-xs sm:text-sm text-white/60 italic mt-0.5">{ev.priest_name}</div>
+                    <div className="text-xs sm:text-sm text-white/60 italic">{ev.priest_name}</div>
                 </div>
 
-                {/* SỬA 2: Đưa tag Sắp diễn ra / LIVE lên góc trên bên phải bằng absolute */}
+                {/* Nhãn trạng thái dán góc trên bên phải */}
                 {isHappening && <span className="absolute top-3 right-3 sm:top-4 sm:right-5 text-[9px] sm:text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded shadow animate-pulse">LIVE</span>}
                 {isUpcoming && status.items?.some(i => i.id === ev.id) && <span className="absolute top-3 right-3 sm:top-4 sm:right-5 text-[9px] sm:text-[10px] font-bold bg-gold/20 text-gold border border-gold/30 px-2 py-0.5 rounded">SẮP TỚI</span>}
             </div>
