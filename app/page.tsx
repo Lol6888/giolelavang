@@ -24,7 +24,7 @@ export default function CinematicHome() {
   const [refreshKey, setRefreshKey] = useState(0)
   const lastActiveTime = useRef(Date.now())
 
-  // 1. Máy phát điện: Chỉ chạy trên iOS, ép vẽ lại trang mỗi 60s để Safari luôn thấy trang "mới"
+  // 1. Máy phát điện
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if (isIOS) {
@@ -35,7 +35,7 @@ export default function CinematicHome() {
     }
   }, []);
 
-  // 2. Reload tức thì: Quay lại tab là tải mới 100% (chỉ áp dụng cho iOS)
+  // 2. Reload tức thì
   useEffect(() => {
     const handleVisibilityChange = () => {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -53,8 +53,6 @@ export default function CinematicHome() {
   const [loadingWeek, setLoadingWeek] = useState(false)
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  
-  // Ref dùng để scroll cột phải
   const listRef = useRef<HTMLDivElement>(null)
 
   // --- CONFIG ---
@@ -128,13 +126,12 @@ export default function CinematicHome() {
     return () => { supabase.removeChannel(ch) }
   }, [])
 
-  // --- NÂNG CẤP: CHỈ AUTO SCROLL BÊN TRONG BOX DANH SÁCH ---
+  // AUTO SCROLL BÊN TRONG BOX DANH SÁCH
   useEffect(() => {
       if (schedules.length === 0) return;
       
       const timeStr = format(now, 'HH:mm:ss');
       
-      // Tìm thánh lễ Đang diễn ra hoặc Sắp diễn ra gần nhất
       const targetItem = schedules.find(ev => {
           const [h, m] = ev.start_time.split(':').map(Number);
           const endDate = new Date(now);
@@ -149,18 +146,10 @@ export default function CinematicHome() {
               const el = document.getElementById(`schedule-row-${targetItem.id}`);
               
               if (container && el) {
-                  // Đo tọa độ của thẻ lễ và box chứa nó
                   const containerRect = container.getBoundingClientRect();
                   const elRect = el.getBoundingClientRect();
-                  
-                  // Tính khoảng cách pixel cần cuộn để đưa thẻ ra giữa box
                   const scrollOffset = elRect.top - containerRect.top - (containerRect.height / 2) + (elRect.height / 2);
-                  
-                  // Chỉ ra lệnh cuộn cho riêng cái box, không làm nhảy trang chính
-                  container.scrollBy({
-                      top: scrollOffset,
-                      behavior: 'smooth'
-                  });
+                  container.scrollBy({ top: scrollOffset, behavior: 'smooth' });
               }
           }, 500);
       }
@@ -213,7 +202,6 @@ export default function CinematicHome() {
   const getStatus = () => {
     const timeStr = format(now, 'HH:mm:ss');
     
-    // 1. Tìm TẤT CẢ các lễ đang diễn ra cùng lúc
     const currents = schedules.filter(s => {
         const [h, m] = s.start_time.split(':').map(Number);
         const endDate = new Date(now);
@@ -224,7 +212,6 @@ export default function CinematicHome() {
 
     if(currents.length > 0) return { type: 'happening', items: currents };
 
-    // 2. Tìm lễ sắp tới
     const nexts = schedules.filter(s => s.start_time > timeStr);
     if(nexts.length > 0) {
         const firstNextTime = nexts[0].start_time;
@@ -242,18 +229,15 @@ export default function CinematicHome() {
         }
     }
     
-    // 3. Hết lễ hôm nay -> Hiển thị lễ ngày mai
     if (nextDaySchedule) {
         return { type: 'upcoming', items: [nextDaySchedule], isTomorrow: true };
     }
 
-    // 4. Không có lễ
     return { type: 'finished' };
   }
   
   const status = getStatus();
 
-  // --- NEW LOGIC: BACKGROUND FILTER ---
   const getBgFilter = () => {
       if (weather.code >= 51) return 'none'; 
       if (weather.code <= 3) return 'brightness(1.05) saturate(1.1)'; 
@@ -262,9 +246,9 @@ export default function CinematicHome() {
 
   // CSS CLASSES
   const widgetContainerStyle = "flex gap-3 sm:gap-4 mt-2 w-full max-w-xl mx-auto lg:mx-0 shrink-0"; 
-  const widgetStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center";
-  const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0 shrink-0";
-
+  const widgetStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center text-left";
+  const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0 shrink-0 flex flex-col text-left";
+  
   return (
     <div key={refreshKey} className="relative h-[100dvh] font-sans text-slate-100 overflow-hidden flex flex-col isolate">
         {/* BACKGROUND */}
@@ -313,19 +297,20 @@ export default function CinematicHome() {
 
         {/* MAIN SCROLL CONTAINER */}
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
-            <div className="max-w-[1800px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0 relative">
+            {/* TRẢ VỀ TỶ LỆ CHUẨN ĐẸP 1800PX */}
+            <div className="max-w-[1800px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0 relative justify-center">
                 
                 {/* SPACER MOBILE */}
                 <div className="lg:hidden w-full h-[45vh] shrink-0 pointer-events-none"></div>
 
-                {/* LEFT COLUMN - Sticky Scroll */}
-                <div className="lg:col-span-7 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col justify-end transition-all duration-500 order-1 lg:pl-4 lg:pb-8 self-start z-20">
-                     <div className="h-full flex flex-col justify-end items-start gap-3">
+                {/* LEFT COLUMN - Cột trái chiếm 7 phần */}
+                <div className="lg:col-span-7 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col justify-end transition-all duration-500 order-1 self-start z-20 w-full lg:pl-4 lg:pb-8">
+                     <div className="h-full flex flex-col justify-end gap-3 w-full">
                         
                         {/* 1. HAPPENING */}
                         {status.type === 'happening' && status.items && (
                             <div className={`${cardStyle} border-red-500/30`}>
-                                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
+                                <div className="flex items-center gap-2 sm:gap-3 mb-4 w-full">
                                     <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
                                         <span className="relative inline-flex rounded-full h-full w-full bg-red-600"></span>
@@ -333,30 +318,37 @@ export default function CinematicHome() {
                                     <span className="text-red-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Đang diễn ra</span>
                                 </div>
                                 
-                                <div className="flex flex-col gap-5 sm:gap-6">
+                                <div className="flex flex-col gap-6 w-full">
                                     {status.items.map((item, idx) => (
-                                        <div key={item.id} className={idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} leading-tight text-white mb-3 text-shadow`}>
+                                        <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-6 border-t border-white/10" : ""}`}>
+                                            {/* SỬA CHỮ DÍNH NHAU: dùng leading-snug */}
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-5xl'} text-white text-shadow leading-snug mb-4`}>
                                                 {item.title}
                                             </h1>
-                                            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                                                <div className="inline-flex items-center gap-1.5 text-white font-mono bg-white/10 px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg border border-white/10 backdrop-blur-sm shadow-sm">
-                                                    <Clock size={14} className="text-gold"/>
-                                                    <span className="text-sm sm:text-base font-bold">{item.start_time.slice(0,5)}</span>
+                                            {/* KHÔI PHỤC UI THỜI GIAN | ĐỊA ĐIỂM */}
+                                            <div className="flex items-center gap-4 sm:gap-6 border-t border-white/20 pt-3 sm:pt-4 w-full justify-start">
+                                                <div>
+                                                    <div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div>
+                                                    <div className="text-xl sm:text-2xl font-bold text-white font-mono">
+                                                        {item.start_time.slice(0,5)}
+                                                    </div>
                                                 </div>
-                                                <div className="inline-flex items-center gap-1.5 text-white/90 font-medium bg-black/20 px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg border border-white/5 backdrop-blur-sm">
-                                                    <MapPin size={14} className="text-gold"/>
-                                                    <span className="text-xs sm:text-sm uppercase tracking-wide">{item.location}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 text-white/80 font-serif italic text-sm sm:text-base">
-                                                    <User size={16}/> <span className="truncate">Chủ tế: {item.priest_name}</span>
+                                                <div className="w-px h-10 bg-white/20"></div>
+                                                <div>
+                                                    <div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Địa điểm</div>
+                                                    <div className="text-xl sm:text-2xl font-serif italic text-white">{item.location}</div>
                                                 </div>
                                             </div>
+                                            {item.priest_name && (
+                                                <div className="flex items-center gap-2 text-white/60 font-serif italic text-sm sm:text-base mt-2 w-full justify-start">
+                                                    <User size={16}/> <span className="truncate">Chủ tế: {item.priest_name}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
 
-                                <div className="mt-6 flex items-center gap-3 text-red-400 font-bold uppercase tracking-widest animate-pulse text-xs sm:text-sm">
+                                <div className="mt-6 flex items-center gap-3 text-red-400 font-bold uppercase tracking-widest animate-pulse text-[10px] sm:text-xs w-full pt-4">
                                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                                     Thánh lễ đang cử hành
                                 </div>
@@ -366,24 +358,33 @@ export default function CinematicHome() {
                         {/* 2. COUNTDOWN */}
                         {status.type === 'countdown' && status.items && (
                             <div className={`${cardStyle} border-gold/30`}>
-                                <div className="bg-gold text-marian-dark font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded inline-block mb-4 uppercase tracking-widest shadow-lg">Sắp diễn ra</div>
+                                <div className="bg-gold text-marian-dark font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded inline-flex mb-4 uppercase tracking-widest shadow-lg self-start">Sắp diễn ra</div>
                                 
-                                <div className="flex flex-col gap-4 sm:gap-5 mb-5 sm:mb-6">
+                                <div className="flex flex-col gap-6 mb-5 sm:mb-6 w-full">
                                     {status.items.map((item, idx) => (
-                                        <div key={item.id} className={idx > 0 ? "pt-4 sm:pt-5 border-t border-white/10" : ""}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} text-white mb-3 text-shadow leading-tight`}>
+                                        <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 border-t border-white/10" : ""}`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-snug mb-4`}>
                                                 {item.title}
                                             </h1>
-                                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-white/90">
-                                                <div className="inline-flex items-center gap-1.5 font-mono bg-white/10 px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg border border-white/10 backdrop-blur-sm shadow-sm">
-                                                    <Clock size={14} className="text-gold"/>
-                                                    <span className="text-sm sm:text-base font-bold">{item.start_time.slice(0,5)}</span>
+                                            {/* KHÔI PHỤC UI THỜI GIAN | ĐỊA ĐIỂM */}
+                                            <div className="flex items-center gap-4 sm:gap-6 border-t border-white/20 pt-3 sm:pt-4 w-full justify-start">
+                                                <div>
+                                                    <div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div>
+                                                    <div className="text-xl sm:text-2xl font-bold text-white font-mono">
+                                                        {item.start_time.slice(0,5)}
+                                                    </div>
                                                 </div>
-                                                <div className="inline-flex items-center gap-1.5 font-medium bg-black/20 px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg border border-white/5 backdrop-blur-sm">
-                                                    <MapPin size={14} className="text-gold"/>
-                                                    <span className="text-xs sm:text-sm uppercase tracking-widest">{item.location}</span>
+                                                <div className="w-px h-10 bg-white/20"></div>
+                                                <div>
+                                                    <div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Địa điểm</div>
+                                                    <div className="text-xl sm:text-2xl font-serif italic text-white">{item.location}</div>
                                                 </div>
                                             </div>
+                                            {item.priest_name && (
+                                                <div className="flex items-center gap-2 text-white/60 font-serif italic text-sm sm:text-base mt-2 w-full justify-start">
+                                                    <User size={16}/> <span className="truncate">Chủ tế: {item.priest_name}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -400,34 +401,41 @@ export default function CinematicHome() {
                         {/* 3. UPCOMING */}
                         {status.type === 'upcoming' && status.items && (
                             <div className={cardStyle}>
-                                <div className="flex items-center gap-2 mb-4">
+                                <div className="flex items-center gap-2 sm:gap-3 mb-4 w-full">
                                     <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${status.isTomorrow ? 'bg-blue-400 shadow-[0_0_10px_#60a5fa]' : 'bg-green-400 shadow-[0_0_10px_#4ade80]'}`}></div>
                                     <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest ${status.isTomorrow ? 'text-blue-300' : 'text-green-300'}`}>
                                         {status.isTomorrow ? 'Lễ ngày mai' : 'Sẵn sàng'}
                                     </span>
                                 </div>
                                 
-                                <div className="text-gold-light text-[10px] sm:text-xs uppercase tracking-[0.2em] mb-4 font-bold">Thánh Lễ Kế Tiếp</div>
+                                <div className="text-gold-light text-[10px] sm:text-xs uppercase tracking-[0.2em] mb-4 font-bold w-full">Thánh Lễ Kế Tiếp</div>
 
-                                <div className="flex flex-col gap-4 sm:gap-5">
+                                <div className="flex flex-col gap-6 w-full">
                                     {status.items.map((item, idx) => (
-                                        <div key={item.id} className={idx > 0 ? "pt-4 sm:pt-5 border-t border-white/10" : ""}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-6xl'} text-white text-shadow leading-tight mb-3`}>
+                                        <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 border-t border-white/10" : ""}`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-snug mb-4`}>
                                                 {item.title}
                                             </h1>
-                                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-white/90">
-                                                <div className="inline-flex items-center gap-1.5 font-mono bg-white/10 px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg border border-white/10 backdrop-blur-sm shadow-sm">
-                                                    <Clock size={14} className="text-gold"/>
-                                                    <span className="text-sm sm:text-base font-bold">
+                                            {/* KHÔI PHỤC UI THỜI GIAN | ĐỊA ĐIỂM */}
+                                            <div className="flex items-center gap-4 sm:gap-6 border-t border-white/20 pt-3 sm:pt-4 w-full justify-start">
+                                                <div>
+                                                    <div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div>
+                                                    <div className="text-xl sm:text-2xl font-bold text-white font-mono">
                                                         {item.start_time.slice(0,5)}
-                                                        {status.isTomorrow && <span className="text-xs text-white/60 ml-1 font-sans font-medium">(Ngày mai)</span>}
-                                                    </span>
+                                                        {status.isTomorrow && <span className="text-xs text-white/50 ml-1 align-top font-sans font-medium">(Ngày mai)</span>}
+                                                    </div>
                                                 </div>
-                                                <div className="inline-flex items-center gap-1.5 font-medium bg-black/20 px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg border border-white/5 backdrop-blur-sm">
-                                                    <MapPin size={14} className="text-gold"/>
-                                                    <span className="text-xs sm:text-sm font-bold uppercase tracking-widest">{item.location}</span>
+                                                <div className="w-px h-10 bg-white/20"></div>
+                                                <div>
+                                                    <div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Địa điểm</div>
+                                                    <div className="text-xl sm:text-2xl font-serif italic text-white">{item.location}</div>
                                                 </div>
                                             </div>
+                                            {item.priest_name && (
+                                                <div className="flex items-center gap-2 text-white/60 font-serif italic text-sm sm:text-base mt-2 w-full justify-start">
+                                                    <User size={16}/> <span className="truncate">Chủ tế: {item.priest_name}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -437,8 +445,8 @@ export default function CinematicHome() {
                         {/* 4. FINISHED */}
                         {status.type === 'finished' && (
                             <div className={cardStyle}>
-                                <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 text-shadow">Lạy Mẹ La Vang</h1>
-                                <p className="text-base sm:text-lg text-white/80 italic font-serif">Xin cầu cho chúng con.</p>
+                                <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 text-shadow w-full">Lạy Mẹ La Vang</h1>
+                                <p className="text-base sm:text-lg text-white/80 italic font-serif w-full">Xin cầu cho chúng con.</p>
                             </div>
                         )}
 
@@ -456,9 +464,10 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* --- BẢNG BÊN PHẢI --- */}
-                <div className="lg:col-span-5 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col order-2 self-start z-20">
+                {/* RIGHT COLUMN (DANH SÁCH LỄ) - Cột phải chiếm 5 phần */}
+                <div className="lg:col-span-5 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col order-2 self-start z-20 w-full">
                     <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
+                        {/* HEADER */}
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 flex-none">
                             <h2 className="font-serif text-2xl sm:text-xl font-bold text-white tracking-wide truncate">Thánh Lễ hôm nay</h2>
                             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -472,7 +481,7 @@ export default function CinematicHome() {
                             </div>
                         </div>
 
-                        {/* Vùng scroll nằm ở đây */}
+                        {/* LIST AREA */}
                         <div ref={listRef} className="overflow-y-auto flex-grow p-3 sm:p-4 custom-scrollbar scroll-smooth">
                             <div className="space-y-3 sm:space-y-6 relative pl-6 sm:pl-8 before:absolute before:left-[27px] sm:before:left-[35px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
     {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-base">Không có lễ hôm nay.</p> :
@@ -487,7 +496,8 @@ export default function CinematicHome() {
         const isHappening = timeStr >= ev.start_time && timeStr < endStr;
         const isUpcoming = timeStr < ev.start_time;
 
-        let rowClass = "flex items-center gap-3 sm:gap-6 py-5 px-4 sm:py-6 sm:px-6 rounded-2xl transition-all border border-transparent group ";
+        // Có class relative để đặt nhãn absolute chuẩn xác
+        let rowClass = "flex items-center gap-3 sm:gap-6 py-5 px-4 sm:py-6 sm:px-6 rounded-2xl transition-all border border-transparent group relative overflow-hidden ";
         
         if (isHappening) {
             rowClass += "bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 shadow-xl transform scale-[1.03]";
@@ -508,8 +518,9 @@ export default function CinematicHome() {
                     {ev.start_time.slice(0,5)}
                 </div>
 
-                <div className="flex-grow min-w-0 pl-2 sm:pl-2">
-                    <div className={`text-lg sm:text-2xl text-shadow-light font-serif leading-tight mb-1
+                {/* SỬA TITLE DÍNH NHAU: Dùng leading-snug và margin phải (pr) để chừa chỗ cho Badge */}
+                <div className="flex-grow min-w-0 pl-2 sm:pl-2 pr-14 sm:pr-20">
+                    <div className={`text-lg sm:text-2xl text-shadow-light font-serif leading-snug mb-1
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
                         {ev.title}
                     </div>
@@ -517,11 +528,17 @@ export default function CinematicHome() {
                         <MapPin size={12} className="shrink-0 mt-0.5 sm:mt-1"/>
                         <span className="leading-snug">{ev.location}</span>
                     </div>
-                    <div className="text-xs sm:text-sm text-white/60 italic mt-0.5">{ev.priest_name}</div>
+                    {ev.priest_name && (
+                        <div className="flex items-start gap-1.5 text-xs sm:text-sm text-white/60 italic mt-0.5">
+                            <User size={12} className="shrink-0 mt-0.5 sm:mt-1" />
+                            <span className="leading-snug">{ev.priest_name}</span>
+                        </div>
+                    )}
                 </div>
 
-                {isHappening && <span className="text-[10px] sm:text-xs font-bold bg-red-600 text-white px-2 py-1 rounded shadow animate-pulse shrink-0">LIVE</span>}
-                {isUpcoming && status.items?.some(i => i.id === ev.id) && <span className="text-[10px] sm:text-xs font-bold bg-gold/20 text-gold border border-gold/30 px-2 py-1 rounded shrink-0">SẮP TỚI</span>}
+                {/* NHÃN SẮP TỚI: Cố định tuyệt đối vào góc trên bên phải, không đẩy/ép text */}
+                {isHappening && <span className="absolute top-3 right-3 sm:top-5 sm:right-5 text-[9px] sm:text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded shadow animate-pulse">LIVE</span>}
+                {isUpcoming && status.items?.some(i => i.id === ev.id) && <span className="absolute top-3 right-3 sm:top-5 sm:right-5 text-[9px] sm:text-[10px] font-bold bg-gold/20 text-gold border border-gold/30 px-2 py-0.5 rounded">SẮP TỚI</span>}
             </div>
         )
     })}
