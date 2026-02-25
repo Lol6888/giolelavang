@@ -304,7 +304,6 @@ export default function CinematicHome() {
 
         {/* MAIN SCROLL CONTAINER */}
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
-            {/* THAY ĐỔI: max-w-6xl (thay vì 1800px) để gom 2 cột sát lại vào giữa trên Desktop */}
             <div className="max-w-6xl mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0 relative justify-center">
                 
                 {/* SPACER MOBILE */}
@@ -328,7 +327,8 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-6 sm:gap-8 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-6 sm:pt-8 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} leading-tight text-white mb-4 sm:mb-5 text-shadow`}>
+                                            {/* SỬA 1: leading-snug thay vì leading-tight */}
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} leading-snug text-white mb-4 sm:mb-5 text-shadow`}>
                                                 {item.title}
                                             </h1>
                                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
@@ -366,7 +366,8 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-5 sm:gap-6 mb-6 sm:mb-8 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white mb-4 sm:mb-5 text-shadow leading-tight`}>
+                                            {/* SỬA 1: leading-snug */}
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white mb-4 sm:mb-5 text-shadow leading-snug`}>
                                                 {item.title}
                                             </h1>
                                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
@@ -413,7 +414,8 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-5 sm:gap-6 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-tight mb-4 sm:mb-5`}>
+                                            {/* SỬA 1: leading-snug */}
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-snug mb-4 sm:mb-5`}>
                                                 {item.title}
                                             </h1>
                                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
@@ -494,7 +496,8 @@ export default function CinematicHome() {
         const isHappening = timeStr >= ev.start_time && timeStr < endStr;
         const isUpcoming = timeStr < ev.start_time;
 
-        let rowClass = "flex items-center gap-3 sm:gap-6 py-5 px-4 sm:py-6 sm:px-6 rounded-2xl transition-all border border-transparent group ";
+        // SỬA 2: Thêm class relative để absolute badge chuẩn góc
+        let rowClass = "flex items-center gap-3 sm:gap-6 py-5 px-4 sm:py-6 sm:px-6 rounded-2xl transition-all border border-transparent group relative ";
         
         if (isHappening) {
             rowClass += "bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 shadow-xl transform scale-[1.03]";
@@ -515,8 +518,9 @@ export default function CinematicHome() {
                     {ev.start_time.slice(0,5)}
                 </div>
 
-                <div className="flex-grow min-w-0 pl-2 sm:pl-2">
-                    <div className={`text-lg sm:text-2xl text-shadow-light font-serif leading-tight mb-1
+                <div className="flex-grow min-w-0 pl-2 sm:pl-2 pr-6 sm:pr-10">
+                    {/* SỬA 1: leading-snug cho title */}
+                    <div className={`text-lg sm:text-2xl text-shadow-light font-serif leading-snug mb-1
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
                         {ev.title}
                     </div>
@@ -527,8 +531,9 @@ export default function CinematicHome() {
                     <div className="text-xs sm:text-sm text-white/60 italic mt-0.5">{ev.priest_name}</div>
                 </div>
 
-                {isHappening && <span className="text-[10px] sm:text-xs font-bold bg-red-600 text-white px-2 py-1 rounded shadow animate-pulse shrink-0">LIVE</span>}
-                {isUpcoming && status.items?.some(i => i.id === ev.id) && <span className="text-[10px] sm:text-xs font-bold bg-gold/20 text-gold border border-gold/30 px-2 py-1 rounded shrink-0">SẮP TỚI</span>}
+                {/* SỬA 2: Đưa tag Sắp diễn ra / LIVE lên góc trên bên phải bằng absolute */}
+                {isHappening && <span className="absolute top-3 right-3 sm:top-4 sm:right-5 text-[9px] sm:text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded shadow animate-pulse">LIVE</span>}
+                {isUpcoming && status.items?.some(i => i.id === ev.id) && <span className="absolute top-3 right-3 sm:top-4 sm:right-5 text-[9px] sm:text-[10px] font-bold bg-gold/20 text-gold border border-gold/30 px-2 py-0.5 rounded">SẮP TỚI</span>}
             </div>
         )
     })}
