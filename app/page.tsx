@@ -24,7 +24,7 @@ export default function CinematicHome() {
   const [refreshKey, setRefreshKey] = useState(0)
   const lastActiveTime = useRef(Date.now())
 
-  // 1. Máy phát điện
+  // 1. Máy phát điện: Chỉ chạy trên iOS, ép vẽ lại trang mỗi 60s để Safari luôn thấy trang "mới"
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if (isIOS) {
@@ -35,7 +35,7 @@ export default function CinematicHome() {
     }
   }, []);
 
-  // 2. Reload tức thì
+  // 2. Reload tức thì: Quay lại tab là tải mới 100% (chỉ áp dụng cho iOS)
   useEffect(() => {
     const handleVisibilityChange = () => {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -53,6 +53,7 @@ export default function CinematicHome() {
   const [loadingWeek, setLoadingWeek] = useState(false)
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // Ref cho scroll
   const listRef = useRef<HTMLDivElement>(null)
 
   // --- CONFIG ---
@@ -125,38 +126,32 @@ export default function CinematicHome() {
 
     return () => { supabase.removeChannel(ch) }
   }, [])
-
-  // AUTO SCROLL BÊN TRONG BOX DANH SÁCH
+  
+  // NÂNG CẤP: AUTO SCROLL
   useEffect(() => {
-      if (schedules.length === 0) return;
-      
-      const timeStr = format(now, 'HH:mm:ss');
-      
-      const targetItem = schedules.find(ev => {
-          const [h, m] = ev.start_time.split(':').map(Number);
-          const endDate = new Date(now);
-          endDate.setHours(h, m + MASS_DURATION_MINUTES, 0, 0);
-          const endStr = format(endDate, 'HH:mm:ss');
-          return timeStr < endStr; 
-      });
+    if (schedules.length === 0) return;
+    
+    const timeStr = format(now, 'HH:mm:ss');
+    const targetItem = schedules.find(ev => {
+        const [h, m] = ev.start_time.split(':').map(Number);
+        const endDate = new Date(now);
+        endDate.setHours(h, m + MASS_DURATION_MINUTES, 0, 0);
+        const endStr = format(endDate, 'HH:mm:ss');
+        return timeStr < endStr; 
+    });
 
-      if (targetItem) {
-          setTimeout(() => {
-              const container = listRef.current;
-              const el = document.getElementById(`schedule-row-${targetItem.id}`);
-              
-              if (container && el) {
-                  const containerRect = container.getBoundingClientRect();
-                  const elRect = el.getBoundingClientRect();
-                  const scrollOffset = elRect.top - containerRect.top - (containerRect.height / 2) + (elRect.height / 2);
-                  
-                  container.scrollBy({
-                      top: scrollOffset,
-                      behavior: 'smooth'
-                  });
-              }
-          }, 500);
-      }
+    if (targetItem) {
+        setTimeout(() => {
+            const container = listRef.current;
+            const el = document.getElementById(`schedule-row-${targetItem.id}`);
+            if (container && el) {
+                const containerRect = container.getBoundingClientRect();
+                const elRect = el.getBoundingClientRect();
+                const scrollOffset = elRect.top - containerRect.top - (containerRect.height / 2) + (elRect.height / 2);
+                container.scrollBy({ top: scrollOffset, behavior: 'smooth' });
+            }
+        }, 500);
+    }
   }, [schedules]);
 
   // Modal Animation
@@ -202,7 +197,7 @@ export default function CinematicHome() {
       return `${mm}:${ss}`;
   }
 
-  // --- CORE LOGIC: GOM NHÓM THÁNH LỄ ---
+  // --- CORE LOGIC: GOM NHÓM THÁNH LỄ CÙNG GIỜ ---
   const getStatus = () => {
     const timeStr = format(now, 'HH:mm:ss');
     
@@ -242,18 +237,21 @@ export default function CinematicHome() {
   
   const status = getStatus();
 
+  // --- NEW LOGIC: BACKGROUND FILTER ---
   const getBgFilter = () => {
       if (weather.code >= 51) return 'none'; 
       if (weather.code <= 3) return 'brightness(1.05) saturate(1.1)'; 
       return 'brightness(1.1) saturate(1.2)'; 
   }
 
-  // CSS CLASSES
-  const widgetContainerStyle = "flex gap-3 sm:gap-4 mt-2 w-full max-w-xl mx-auto shrink-0"; 
+  // CSS CLASSES TỐI ƯU HÓA
+  const widgetContainerStyle = "flex gap-3 sm:gap-4 mt-2 w-full max-w-xl mx-auto lg:mx-0 shrink-0"; 
   const widgetStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center";
-  const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 animate-fade-in w-full max-w-xl mx-auto shrink-0 flex flex-col text-left";
   
-  // UI CHUNG CHO CÁC THẺ 
+  // Card căn giữa trên Mobile (mx-auto), nhưng nội dung bên trong vẫn căn trái (text-left)
+  const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0 shrink-0 flex flex-col text-left";
+  
+  // Đồng bộ UI Tag
   const tagStyle = "inline-flex items-center gap-1.5 sm:gap-2 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10 backdrop-blur-md shadow-sm text-white/90 transition-all hover:bg-white/20";
 
   return (
@@ -281,6 +279,7 @@ export default function CinematicHome() {
         {marqueeList.length > 0 && (
             <div className="sticky top-0 z-[60] bg-black/40 backdrop-blur-md text-white font-medium text-lg sm:text-base py-3 sm:py-2 px-4 border-b border-white/10 shrink-0 shadow-lg">
                  <div className="marquee-container w-full flex overflow-hidden select-none">
+                    {/* TRACK 1 */}
                     <div 
                         className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee will-change-transform"
                         style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
@@ -289,6 +288,7 @@ export default function CinematicHome() {
                             <span key={`t1-${i}`} className="tracking-wide">{text}</span>
                         ))}
                     </div>
+                    {/* TRACK 2 */}
                     <div 
                         className="marquee-track flex items-center gap-12 sm:gap-16 shrink-0 min-w-full justify-around pr-12 sm:pr-16 animate-marquee will-change-transform" 
                         aria-hidden="true"
@@ -304,15 +304,15 @@ export default function CinematicHome() {
 
         {/* MAIN SCROLL CONTAINER */}
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
-            {/* THAY ĐỔI: Tăng max-w lên 1500px để 2 bảng rộng rãi hơn */}
+            {/* Tăng khung chứa lên max-w-[1500px] để thoáng hơn */}
             <div className="max-w-[1500px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0 relative justify-center">
                 
                 {/* SPACER MOBILE */}
                 <div className="lg:hidden w-full h-[45vh] shrink-0 pointer-events-none"></div>
 
-                {/* LEFT COLUMN - Đổi từ col-span-7 xuống col-span-5 để nhường 2 phần cho cột phải */}
-                <div className="lg:col-span-5 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col justify-end transition-all duration-500 order-1 self-start z-20 w-full">
-                     <div className="h-full flex flex-col justify-end items-center lg:items-end gap-3 w-full">
+                {/* LEFT COLUMN - Đổi Tỷ lệ: Chiếm 5 phần, Căn giữa Mobile (nhưng nội dung căn trái) */}
+                <div className="lg:col-span-5 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col justify-end transition-all duration-500 order-1 lg:pb-8 self-start z-20 w-full">
+                     <div className="h-full flex flex-col justify-end items-center lg:items-start gap-3 w-full">
                         
                         {/* 1. HAPPENING */}
                         {status.type === 'happening' && status.items && (
@@ -328,7 +328,7 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-6 sm:gap-8 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-6 sm:pt-8 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} leading-normal text-white mb-4 sm:mb-5 text-shadow`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} leading-normal text-white mb-4 sm:mb-5 text-shadow`}>
                                                 {item.title}
                                             </h1>
                                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
@@ -366,7 +366,7 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-5 sm:gap-6 mb-6 sm:mb-8 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} text-white mb-4 sm:mb-5 text-shadow leading-normal`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white mb-4 sm:mb-5 text-shadow leading-normal`}>
                                                 {item.title}
                                             </h1>
                                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
@@ -413,7 +413,7 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-5 sm:gap-6 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} text-white text-shadow leading-normal mb-4 sm:mb-5`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-normal mb-4 sm:mb-5`}>
                                                 {item.title}
                                             </h1>
                                             <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
@@ -463,9 +463,10 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* --- BẢNG BÊN PHẢI - Đổi từ col-span-5 lên col-span-7 để rộng hơn 40% --- */}
+                {/* RIGHT COLUMN (DANH SÁCH LỄ) - Đổi Tỷ lệ: Tăng lên 7 phần để mở rộng */}
                 <div className="lg:col-span-7 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col order-2 self-start z-20 w-full">
                     <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
+                        {/* HEADER */}
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 flex-none">
                             <h2 className="font-serif text-2xl sm:text-xl font-bold text-white tracking-wide truncate">Thánh Lễ hôm nay</h2>
                             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -479,7 +480,7 @@ export default function CinematicHome() {
                             </div>
                         </div>
 
-                        {/* Vùng scroll */}
+                        {/* LIST AREA */}
                         <div ref={listRef} className="overflow-y-auto flex-grow p-3 sm:p-4 custom-scrollbar scroll-smooth">
                             <div className="space-y-3 sm:space-y-6 relative pl-6 sm:pl-8 before:absolute before:left-[27px] sm:before:left-[35px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
     {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-base">Không có lễ hôm nay.</p> :
@@ -494,6 +495,7 @@ export default function CinematicHome() {
         const isHappening = timeStr >= ev.start_time && timeStr < endStr;
         const isUpcoming = timeStr < ev.start_time;
 
+        // Bổ sung class relative
         let rowClass = "flex items-center gap-3 sm:gap-6 py-5 px-4 sm:py-6 sm:px-6 rounded-2xl transition-all border border-transparent group relative ";
         
         if (isHappening) {
@@ -527,6 +529,7 @@ export default function CinematicHome() {
                     <div className="text-xs sm:text-sm text-white/60 italic">{ev.priest_name}</div>
                 </div>
 
+                {/* Nhãn góc trên bên phải */}
                 {isHappening && <span className="absolute top-3 right-3 sm:top-4 sm:right-5 text-[9px] sm:text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded shadow animate-pulse">LIVE</span>}
                 {isUpcoming && status.items?.some(i => i.id === ev.id) && <span className="absolute top-3 right-3 sm:top-4 sm:right-5 text-[9px] sm:text-[10px] font-bold bg-gold/20 text-gold border border-gold/30 px-2 py-0.5 rounded">SẮP TỚI</span>}
             </div>
