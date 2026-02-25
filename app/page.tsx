@@ -128,31 +128,43 @@ export default function CinematicHome() {
     return () => { supabase.removeChannel(ch) }
   }, [])
 
-  // --- NÂNG CẤP: AUTO SCROLL BẢNG BÊN PHẢI ---
+  // --- NÂNG CẤP: CHỈ AUTO SCROLL BÊN TRONG BOX DANH SÁCH ---
   useEffect(() => {
       if (schedules.length === 0) return;
       
-      const timeStr = format(new Date(), 'HH:mm:ss');
+      const timeStr = format(now, 'HH:mm:ss');
       
       // Tìm thánh lễ Đang diễn ra hoặc Sắp diễn ra gần nhất
       const targetItem = schedules.find(ev => {
           const [h, m] = ev.start_time.split(':').map(Number);
-          const endDate = new Date();
+          const endDate = new Date(now);
           endDate.setHours(h, m + MASS_DURATION_MINUTES, 0, 0);
           const endStr = format(endDate, 'HH:mm:ss');
           return timeStr < endStr; 
       });
 
       if (targetItem) {
-          // Dùng setTimeout để đảm bảo DOM đã render xong danh sách
           setTimeout(() => {
+              const container = listRef.current;
               const el = document.getElementById(`schedule-row-${targetItem.id}`);
-              if (el) {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              
+              if (container && el) {
+                  // Đo tọa độ của thẻ lễ và box chứa nó
+                  const containerRect = container.getBoundingClientRect();
+                  const elRect = el.getBoundingClientRect();
+                  
+                  // Tính khoảng cách pixel cần cuộn để đưa thẻ ra giữa box
+                  const scrollOffset = elRect.top - containerRect.top - (containerRect.height / 2) + (elRect.height / 2);
+                  
+                  // Chỉ ra lệnh cuộn cho riêng cái box, không làm nhảy trang chính
+                  container.scrollBy({
+                      top: scrollOffset,
+                      behavior: 'smooth'
+                  });
               }
           }, 500);
       }
-  }, [schedules]); // Chỉ chạy khi danh sách schedules tải xong hoặc có cập nhật
+  }, [schedules]);
 
   // Modal Animation
   useEffect(() => {
@@ -444,7 +456,7 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* --- NÂNG CẤP BẢNG BÊN PHẢI: lg:sticky lg:top-4 lg:h-[calc(100dvh-6rem)] --- */}
+                {/* --- BẢNG BÊN PHẢI --- */}
                 <div className="lg:col-span-5 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col order-2 self-start z-20">
                     <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 flex-none">
@@ -460,6 +472,7 @@ export default function CinematicHome() {
                             </div>
                         </div>
 
+                        {/* Vùng scroll nằm ở đây */}
                         <div ref={listRef} className="overflow-y-auto flex-grow p-3 sm:p-4 custom-scrollbar scroll-smooth">
                             <div className="space-y-3 sm:space-y-6 relative pl-6 sm:pl-8 before:absolute before:left-[27px] sm:before:left-[35px] before:top-4 before:bottom-4 before:w-[1px] before:bg-white/20">
     {schedules.length === 0 ? <p className="text-white/40 text-center italic mt-10 text-base">Không có lễ hôm nay.</p> :
@@ -489,7 +502,6 @@ export default function CinematicHome() {
         }
 
         return (
-            // NÂNG CẤP: Gắn id vào mỗi item để scroll tới
             <div key={ev.id} id={`schedule-row-${ev.id}`} className={rowClass}>
                 <div className={`w-16 sm:w-24 text-right text-2xl sm:text-4xl text-shadow-light font-mono tracking-tight shrink-0
                     ${isHappening ? 'text-red-400 font-bold' : (isUpcoming ? 'text-gold font-bold' : 'text-white')}`}>
