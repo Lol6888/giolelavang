@@ -248,13 +248,13 @@ export default function CinematicHome() {
       return 'brightness(1.1) saturate(1.2)'; 
   }
 
-  // CSS CLASSES - Đã được tối ưu
-  const widgetContainerStyle = "flex gap-3 sm:gap-4 mt-2 w-full max-w-xl mx-auto lg:mx-0 shrink-0"; 
+  // CSS CLASSES - Chỉnh lại text-left và mx-auto
+  const widgetContainerStyle = "flex gap-3 sm:gap-4 mt-2 w-full max-w-xl mx-auto shrink-0"; 
   const widgetStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl px-4 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 flex-1 justify-center";
-  const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 animate-fade-in w-full max-w-xl mx-auto lg:mx-0 shrink-0 flex flex-col items-center lg:items-start text-center lg:text-left";
+  const cardStyle = "bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 animate-fade-in w-full max-w-xl mx-auto shrink-0 flex flex-col text-left";
   
-  // UI CHUNG CHO CÁC THẺ (Giờ, Địa Điểm, Chủ Tế) - Đã căn chỉnh font size to hơn
-  const tagStyle = "inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10 backdrop-blur-md shadow-sm text-white/90 transition-all hover:bg-white/20";
+  // UI CHUNG CHO CÁC THẺ 
+  const tagStyle = "inline-flex items-center gap-1.5 sm:gap-2 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10 backdrop-blur-md shadow-sm text-white/90 transition-all hover:bg-white/20";
 
   return (
     <div key={refreshKey} className="relative h-[100dvh] font-sans text-slate-100 overflow-hidden flex flex-col isolate">
@@ -304,19 +304,20 @@ export default function CinematicHome() {
 
         {/* MAIN SCROLL CONTAINER */}
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
-            <div className="max-w-[1800px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0 relative">
+            {/* THAY ĐỔI: max-w-6xl (thay vì 1800px) để gom 2 cột sát lại vào giữa trên Desktop */}
+            <div className="max-w-6xl mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0 relative justify-center">
                 
                 {/* SPACER MOBILE */}
                 <div className="lg:hidden w-full h-[45vh] shrink-0 pointer-events-none"></div>
 
-                {/* LEFT COLUMN - Sticky Scroll & Mobile Center */}
-                <div className="lg:col-span-7 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col justify-end transition-all duration-500 order-1 lg:pl-4 lg:pb-8 self-start z-20 w-full">
-                     <div className="h-full flex flex-col justify-end items-center lg:items-start gap-3 w-full">
+                {/* LEFT COLUMN - Sticky Scroll */}
+                <div className="lg:col-span-7 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col justify-end transition-all duration-500 order-1 self-start z-20 w-full">
+                     <div className="h-full flex flex-col justify-end items-center lg:items-end gap-3 w-full">
                         
                         {/* 1. HAPPENING */}
                         {status.type === 'happening' && status.items && (
                             <div className={`${cardStyle} border-red-500/30`}>
-                                <div className="flex items-center justify-center lg:justify-start gap-2 sm:gap-3 mb-5 sm:mb-6 w-full">
+                                <div className="flex items-center gap-2 sm:gap-3 mb-5 w-full">
                                     <span className="relative flex h-3 w-3 sm:h-4 sm:w-4">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
                                         <span className="relative inline-flex rounded-full h-full w-full bg-red-600"></span>
@@ -326,11 +327,11 @@ export default function CinematicHome() {
                                 
                                 <div className="flex flex-col gap-6 sm:gap-8 w-full">
                                     {status.items.map((item, idx) => (
-                                        <div key={item.id} className={`flex flex-col items-center lg:items-start w-full ${idx > 0 ? "pt-6 sm:pt-8 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold text-center lg:text-left ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} leading-tight text-white mb-4 sm:mb-5 text-shadow`}>
+                                        <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-6 sm:pt-8 border-t border-white/10" : ""}`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} leading-tight text-white mb-4 sm:mb-5 text-shadow`}>
                                                 {item.title}
                                             </h1>
-                                            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 w-full">
+                                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
                                                 <div className={`${tagStyle} font-mono`}>
                                                     <Clock size={16} className="text-gold"/>
                                                     <span className="text-sm sm:text-base font-bold">{item.start_time.slice(0,5)}</span>
@@ -350,7 +351,7 @@ export default function CinematicHome() {
                                     ))}
                                 </div>
 
-                                <div className="mt-8 flex items-center justify-center lg:justify-start gap-3 text-red-400 font-bold uppercase tracking-widest animate-pulse text-xs sm:text-sm w-full border-t border-white/10 pt-5">
+                                <div className="mt-8 flex items-center gap-3 text-red-400 font-bold uppercase tracking-widest animate-pulse text-xs sm:text-sm w-full border-t border-white/10 pt-5">
                                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                                     Thánh lễ đang cử hành
                                 </div>
@@ -360,15 +361,15 @@ export default function CinematicHome() {
                         {/* 2. COUNTDOWN */}
                         {status.type === 'countdown' && status.items && (
                             <div className={`${cardStyle} border-gold/30`}>
-                                <div className="bg-gold text-marian-dark font-bold text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg inline-block mb-5 uppercase tracking-widest shadow-lg">Sắp diễn ra</div>
+                                <div className="bg-gold text-marian-dark font-bold text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg inline-flex mb-5 uppercase tracking-widest shadow-lg self-start">Sắp diễn ra</div>
                                 
                                 <div className="flex flex-col gap-5 sm:gap-6 mb-6 sm:mb-8 w-full">
                                     {status.items.map((item, idx) => (
-                                        <div key={item.id} className={`flex flex-col items-center lg:items-start w-full ${idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold text-center lg:text-left ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white mb-4 sm:mb-5 text-shadow leading-tight`}>
+                                        <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white mb-4 sm:mb-5 text-shadow leading-tight`}>
                                                 {item.title}
                                             </h1>
-                                            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 w-full">
+                                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
                                                 <div className={`${tagStyle} font-mono`}>
                                                     <Clock size={16} className="text-gold"/>
                                                     <span className="text-sm sm:text-base font-bold">{item.start_time.slice(0,5)}</span>
@@ -388,7 +389,7 @@ export default function CinematicHome() {
                                     ))}
                                 </div>
 
-                                <div className="bg-black/30 rounded-2xl p-4 sm:p-5 border border-white/10 inline-block w-full text-center lg:text-left">
+                                <div className="bg-black/30 rounded-2xl p-4 sm:p-5 border border-white/10 inline-block w-full">
                                     <div className="text-xs sm:text-sm text-white/70 uppercase tracking-widest mb-2 font-bold">Sẽ bắt đầu sau</div>
                                     <div className="font-mono text-5xl sm:text-6xl lg:text-7xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
                                         {status.diffString}
@@ -400,22 +401,22 @@ export default function CinematicHome() {
                         {/* 3. UPCOMING */}
                         {status.type === 'upcoming' && status.items && (
                             <div className={cardStyle}>
-                                <div className="flex items-center justify-center lg:justify-start gap-2 sm:gap-3 mb-5 w-full">
+                                <div className="flex items-center gap-2 sm:gap-3 mb-5 w-full">
                                     <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${status.isTomorrow ? 'bg-blue-400 shadow-[0_0_10px_#60a5fa]' : 'bg-green-400 shadow-[0_0_10px_#4ade80]'}`}></div>
                                     <span className={`text-xs sm:text-sm font-bold uppercase tracking-widest ${status.isTomorrow ? 'text-blue-300' : 'text-green-300'}`}>
                                         {status.isTomorrow ? 'Lễ ngày mai' : 'Sẵn sàng'}
                                     </span>
                                 </div>
                                 
-                                <div className="text-gold-light text-sm sm:text-base uppercase tracking-[0.2em] mb-5 sm:mb-6 font-bold text-center lg:text-left w-full">Thánh Lễ Kế Tiếp</div>
+                                <div className="text-gold-light text-sm sm:text-base uppercase tracking-[0.2em] mb-5 sm:mb-6 font-bold w-full">Thánh Lễ Kế Tiếp</div>
 
                                 <div className="flex flex-col gap-5 sm:gap-6 w-full">
                                     {status.items.map((item, idx) => (
-                                        <div key={item.id} className={`flex flex-col items-center lg:items-start w-full ${idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold text-center lg:text-left ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-tight mb-4 sm:mb-5`}>
+                                        <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-tight mb-4 sm:mb-5`}>
                                                 {item.title}
                                             </h1>
-                                            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 w-full">
+                                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
                                                 <div className={`${tagStyle} font-mono`}>
                                                     <Clock size={16} className="text-gold"/>
                                                     <span className="text-sm sm:text-base font-bold">
@@ -443,8 +444,8 @@ export default function CinematicHome() {
                         {/* 4. FINISHED */}
                         {status.type === 'finished' && (
                             <div className={cardStyle}>
-                                <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 text-shadow text-center lg:text-left">Lạy Mẹ La Vang</h1>
-                                <p className="text-lg sm:text-xl text-white/80 italic font-serif text-center lg:text-left">Xin cầu cho chúng con.</p>
+                                <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 text-shadow w-full">Lạy Mẹ La Vang</h1>
+                                <p className="text-lg sm:text-xl text-white/80 italic font-serif w-full">Xin cầu cho chúng con.</p>
                             </div>
                         )}
 
@@ -463,7 +464,7 @@ export default function CinematicHome() {
                 </div>
 
                 {/* --- BẢNG BÊN PHẢI --- */}
-                <div className="lg:col-span-5 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col order-2 self-start z-20">
+                <div className="lg:col-span-5 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col order-2 self-start z-20 w-full">
                     <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 flex-none">
                             <h2 className="font-serif text-2xl sm:text-xl font-bold text-white tracking-wide truncate">Thánh Lễ hôm nay</h2>
