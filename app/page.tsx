@@ -584,9 +584,9 @@ export default function CinematicHome() {
                                                                 <span className="break-words whitespace-normal">{ev.location}</span>
                                                             </div>
                                                             {ev.priest_name && (
-                                                                <div className="text-[10px] sm:text-[11px] text-white/40 italic mt-0.5 break-words whitespace-normal flex items-start gap-1">
-                                                                    <User size={10} className="shrink-0 mt-0.5"/> 
-                                                                    <span>{ev.priest_name}</span>
+                                                                <div className="flex items-start gap-1.5 text-xs sm:text-sm text-white/60 italic mt-0.5">
+                                                                    <User size={12} className="shrink-0 mt-0.5 sm:mt-1" />
+                                                                    <span className="leading-snug">{ev.priest_name}</span>
                                                                 </div>
                                                             )}
                                                         </div>
