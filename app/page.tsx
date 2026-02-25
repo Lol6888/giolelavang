@@ -283,83 +283,117 @@ export default function CinematicHome() {
                 {/* SPACER MOBILE */}
                 <div className="lg:hidden w-full h-[45vh] shrink-0 pointer-events-none"></div>
 
-                {/* LEFT COLUMN - NÂNG CẤP: Thêm lg:sticky lg:top-4 lg:h-[calc(100dvh-6rem)] và self-start để neo bảng */}
+                {/* LEFT COLUMN - Neo thông tin */}
                 <div className="lg:col-span-7 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col justify-end transition-all duration-500 order-1 lg:pl-4 lg:pb-8 self-start z-20">
                      <div className="h-full flex flex-col justify-end items-start gap-3">
                         
-                        {/* 1. HAPPENING - Hỗ trợ nhiều lễ */}
+                        {/* 1. HAPPENING - Gom gọn vào 1 thẻ chung */}
                         {status.type === 'happening' && status.items && (
-                            <div className="flex flex-col gap-4 w-full max-h-[65vh] overflow-y-auto custom-scrollbar lg:pr-4">
-                                {status.items.map(item => (
-                                    <div key={item.id} className={`${cardStyle} border-red-500/30`}>
-                                        <div className="flex items-center gap-2 sm:gap-3 mb-2"><span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span><span className="relative inline-flex rounded-full h-full w-full bg-red-600"></span></span><span className="text-red-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Đang diễn ra</span></div>
-                                        <h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-5xl leading-tight text-white mb-2 text-shadow">{item.title}</h1>
-                                        <div className="inline-flex items-center gap-1.5 text-white/80 font-medium mb-3 bg-black/20 px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg border border-white/5 backdrop-blur-sm">
-                                            <MapPin size={14} className="text-gold"/>
-                                            <span className="text-xs sm:text-sm uppercase tracking-wide">{item.location}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-white/80 font-serif italic text-base sm:text-lg border-b border-white/10 pb-3 sm:pb-4 mb-0">
-                                            <User size={18}/> <span className="truncate">Chủ tế: {item.priest_name}</span>
-                                        </div>
-                                        <div className="mt-4 flex items-center gap-3 text-red-400 font-bold uppercase tracking-widest animate-pulse">
-                                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                            Thánh lễ đang cử hành
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* 2. COUNTDOWN - Hỗ trợ nhiều lễ */}
-                        {status.type === 'countdown' && status.items && (
-                            <div className="flex flex-col gap-4 w-full max-h-[65vh] overflow-y-auto custom-scrollbar lg:pr-4">
-                                {status.items.map(item => (
-                                    <div key={item.id} className={`${cardStyle} border-gold/30`}>
-                                        <div className="bg-gold text-marian-dark font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded inline-block mb-2 sm:mb-3 uppercase tracking-widest shadow-lg">Sắp diễn ra</div>
-                                        <h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-2 sm:mb-3 text-shadow leading-tight">{item.title}</h1>
-                                        <div className="flex items-center gap-2 mb-3 sm:mb-4 text-white/90">
-                                            <MapPin size={14} className="text-gold"/>
-                                            <span className="text-xs sm:text-sm font-bold uppercase tracking-widest">{item.location}</span>
-                                        </div>
-                                        <div className="bg-black/30 rounded-xl p-3 sm:p-4 border border-white/10 mb-1 inline-block w-full text-center lg:text-left">
-                                            <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">SẼ BẮT ĐẦU SAU</div>
-                                            <div className="font-mono text-4xl sm:text-5xl lg:text-6xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
-                                                {status.diffString}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* 3. UPCOMING - Hỗ trợ nhiều lễ */}
-                        {status.type === 'upcoming' && status.items && (
-                            <div className="flex flex-col gap-4 w-full max-h-[65vh] overflow-y-auto custom-scrollbar lg:pr-4">
-                                {status.items.map(item => (
-                                    <div key={item.id} className={cardStyle}>
-                                        <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                                            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${status.isTomorrow ? 'bg-blue-400 shadow-[0_0_10px_#60a5fa]' : 'bg-green-400 shadow-[0_0_10px_#4ade80]'}`}></div>
-                                            <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest ${status.isTomorrow ? 'text-blue-300' : 'text-green-300'}`}>
-                                                {status.isTomorrow ? 'Lễ ngày mai' : 'Sẵn sàng'}
-                                            </span>
-                                        </div>
-                                        <div className="mb-3 sm:mb-4">
-                                            <div className="text-gold-light text-[10px] sm:text-xs uppercase tracking-[0.2em] mb-4 font-bold">Thánh Lễ Kế Tiếp</div>
-                                            <h1 className="font-serif font-bold text-3xl sm:text-4xl lg:text-6xl text-white text-shadow leading-tight">{item.title}</h1>
-                                        </div>
-                                        <div className="flex gap-4 sm:gap-6 border-t border-white/20 pt-3 sm:pt-4">
-                                            <div>
-                                                <div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div>
-                                                <div className="text-xl sm:text-2xl font-bold text-white font-mono">
-                                                    {item.start_time.slice(0,5)}
-                                                    {status.isTomorrow && <span className="text-xs text-white/50 ml-1 align-top font-sans font-medium">(Ngày mai)</span>}
+                            <div className={`${cardStyle} border-red-500/30`}>
+                                {/* Header chung */}
+                                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
+                                    <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-full w-full bg-red-600"></span>
+                                    </span>
+                                    <span className="text-red-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Đang diễn ra</span>
+                                </div>
+                                
+                                {/* Danh sách các lễ bên trong thẻ */}
+                                <div className="flex flex-col gap-5 sm:gap-6">
+                                    {status.items.map((item, idx) => (
+                                        <div key={item.id} className={idx > 0 ? "pt-5 sm:pt-6 border-t border-white/10" : ""}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} leading-tight text-white mb-3 text-shadow`}>
+                                                {item.title}
+                                            </h1>
+                                            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                                                <div className="inline-flex items-center gap-1.5 text-white/80 font-medium bg-black/20 px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg border border-white/5 backdrop-blur-sm">
+                                                    <MapPin size={14} className="text-gold"/>
+                                                    <span className="text-xs sm:text-sm uppercase tracking-wide">{item.location}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-white/80 font-serif italic text-sm sm:text-base">
+                                                    <User size={16}/> <span className="truncate">Chủ tế: {item.priest_name}</span>
                                                 </div>
                                             </div>
-                                            <div className="w-px bg-white/20"></div>
-                                            <div><div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Địa điểm</div><div className="text-xl sm:text-2xl font-serif italic text-white">{item.location}</div></div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Footer chung */}
+                                <div className="mt-6 flex items-center gap-3 text-red-400 font-bold uppercase tracking-widest animate-pulse text-xs sm:text-sm">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                    Thánh lễ đang cử hành
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 2. COUNTDOWN - Gom gọn vào 1 thẻ chung */}
+                        {status.type === 'countdown' && status.items && (
+                            <div className={`${cardStyle} border-gold/30`}>
+                                <div className="bg-gold text-marian-dark font-bold text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded inline-block mb-4 uppercase tracking-widest shadow-lg">Sắp diễn ra</div>
+                                
+                                {/* Danh sách các lễ sắp tới cùng giờ */}
+                                <div className="flex flex-col gap-4 sm:gap-5 mb-5 sm:mb-6">
+                                    {status.items.map((item, idx) => (
+                                        <div key={item.id} className={idx > 0 ? "pt-4 sm:pt-5 border-t border-white/10" : ""}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} text-white mb-2 text-shadow leading-tight`}>
+                                                {item.title}
+                                            </h1>
+                                            <div className="flex items-center gap-2 text-white/90">
+                                                <MapPin size={14} className="text-gold"/>
+                                                <span className="text-xs sm:text-sm font-bold uppercase tracking-widest">{item.location}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Bộ đếm chung cho tất cả các lễ này */}
+                                <div className="bg-black/30 rounded-xl p-3 sm:p-4 border border-white/10 inline-block w-full text-center lg:text-left">
+                                    <div className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-bold">SẼ BẮT ĐẦU SAU</div>
+                                    <div className="font-mono text-4xl sm:text-5xl lg:text-6xl font-bold text-white tabular-nums drop-shadow-2xl tracking-tighter">
+                                        {status.diffString}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 3. UPCOMING - Gom gọn vào 1 thẻ chung */}
+                        {status.type === 'upcoming' && status.items && (
+                            <div className={cardStyle}>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${status.isTomorrow ? 'bg-blue-400 shadow-[0_0_10px_#60a5fa]' : 'bg-green-400 shadow-[0_0_10px_#4ade80]'}`}></div>
+                                    <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest ${status.isTomorrow ? 'text-blue-300' : 'text-green-300'}`}>
+                                        {status.isTomorrow ? 'Lễ ngày mai' : 'Sẵn sàng'}
+                                    </span>
+                                </div>
+                                
+                                <div className="text-gold-light text-[10px] sm:text-xs uppercase tracking-[0.2em] mb-4 font-bold">Thánh Lễ Kế Tiếp</div>
+
+                                {/* Danh sách các lễ kế tiếp cùng giờ */}
+                                <div className="flex flex-col gap-4 sm:gap-5 mb-5">
+                                    {status.items.map((item, idx) => (
+                                        <div key={item.id} className={idx > 0 ? "pt-4 sm:pt-5 border-t border-white/10" : ""}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-6xl'} text-white text-shadow leading-tight mb-2`}>
+                                                {item.title}
+                                            </h1>
+                                            <div className="flex items-center gap-2 text-white/80 font-serif italic text-sm sm:text-base">
+                                                <MapPin size={14} className="text-gold"/>
+                                                <span>{item.location}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Thời gian chung */}
+                                <div className="flex gap-4 sm:gap-6 border-t border-white/20 pt-4">
+                                    <div>
+                                        <div className="text-[10px] text-white/50 uppercase mb-0.5 font-bold">Thời gian</div>
+                                        <div className="text-xl sm:text-2xl font-bold text-white font-mono">
+                                            {status.items[0].start_time.slice(0,5)}
+                                            {status.isTomorrow && <span className="text-xs text-white/50 ml-1 align-top font-sans font-medium">(Ngày mai)</span>}
                                         </div>
                                     </div>
-                                ))}
+                                </div>
                             </div>
                         )}
 
@@ -420,11 +454,10 @@ export default function CinematicHome() {
 
         let rowClass = "flex items-center gap-3 sm:gap-6 py-5 px-4 sm:py-6 sm:px-6 rounded-2xl transition-all border border-transparent group ";
         
-        // NÂNG CẤP: Logic highlight cập nhật theo mảng status.items
+        // Highlight logic
         if (isHappening) {
             rowClass += "bg-gradient-to-r from-red-600/20 to-transparent border-l-4 border-l-red-500 shadow-xl transform scale-[1.03]";
         } else if (isUpcoming) {
-            // Kiểm tra xem sự kiện này có nằm trong mảng items sắp tới không
             if (status.type !== 'finished' && status.items?.some(i => i.id === ev.id)) {
                  rowClass += "bg-white/5 border-l-4 border-l-gold/50";
             } else {
@@ -465,7 +498,7 @@ export default function CinematicHome() {
             </div>
         </div>
 
-        {/* WEEK MODAL (Nguyên bản) */}
+        {/* WEEK MODAL */}
         {(showWeekModal || modalVisible) && (
             <div className={`fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md transition-opacity duration-300 ${modalVisible ? 'opacity-100' : 'opacity-0'}`}>
                 <div className={`bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-2xl sm:rounded-3xl w-[95%] sm:w-full max-w-6xl max-h-[85vh] sm:max-h-[90vh] flex flex-col shadow-2xl transition-transform duration-300 ${modalVisible ? 'scale-100' : 'scale-95'}`}>
