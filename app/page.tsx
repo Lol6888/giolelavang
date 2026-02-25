@@ -322,7 +322,7 @@ export default function CinematicHome() {
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-6 border-t border-white/10" : ""}`}>
                                             {/* SỬA CHỮ DÍNH NHAU: dùng leading-snug */}
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-snug mb-4`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-5xl'} text-white text-shadow leading-snug mb-4`}>
                                                 {item.title}
                                             </h1>
                                             {/* KHÔI PHỤC UI THỜI GIAN | ĐỊA ĐIỂM */}
