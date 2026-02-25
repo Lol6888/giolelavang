@@ -322,7 +322,7 @@ export default function CinematicHome() {
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-6 border-t border-white/10" : ""}`}>
                                             {/* SỬA CHỮ DÍNH NHAU: dùng leading-snug */}
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-5xl'} text-white text-shadow leading-normal mb-4`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-5xl'} text-white text-shadow leading-snug mb-4`}>
                                                 {item.title}
                                             </h1>
                                             {/* KHÔI PHỤC UI THỜI GIAN | ĐỊA ĐIỂM */}
@@ -363,7 +363,7 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-6 mb-5 sm:mb-6 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-normal mb-4`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-snug mb-4`}>
                                                 {item.title}
                                             </h1>
                                             {/* KHÔI PHỤC UI THỜI GIAN | ĐỊA ĐIỂM */}
@@ -413,7 +413,7 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-6 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-5 border-t border-white/10" : ""}`}>
-                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-normal mb-4`}>
+                                            <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-5xl lg:text-6xl'} text-white text-shadow leading-snug mb-4`}>
                                                 {item.title}
                                             </h1>
                                             {/* KHÔI PHỤC UI THỜI GIAN | ĐỊA ĐIỂM */}
@@ -520,18 +520,18 @@ export default function CinematicHome() {
 
                 {/* SỬA TITLE DÍNH NHAU: Dùng leading-snug và margin phải (pr) để chừa chỗ cho Badge */}
                 <div className="flex-grow min-w-0 pl-2 sm:pl-2 pr-14 sm:pr-20">
-                    <div className={`text-lg sm:text-2xl text-shadow-light font-serif leading-normal mb-1
+                    <div className={`text-lg sm:text-2xl text-shadow-light font-serif leading-snug mb-1
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
                         {ev.title}
                     </div>
                     <div className="flex items-start gap-1.5 text-xs sm:text-base text-white/70 uppercase font-bold tracking-wider">
                         <MapPin size={12} className="shrink-0 mt-0.5 sm:mt-1"/>
-                        <span className="leading-normal">{ev.location}</span>
+                        <span className="leading-snug">{ev.location}</span>
                     </div>
                     {ev.priest_name && (
                         <div className="flex items-start gap-1.5 text-xs sm:text-sm text-white/60 italic mt-0.5">
                             <User size={12} className="shrink-0 mt-0.5 sm:mt-1" />
-                            <span className="leading-normal">{ev.priest_name}</span>
+                            <span className="leading-snug">{ev.priest_name}</span>
                         </div>
                     )}
                 </div>
