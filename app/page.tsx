@@ -304,14 +304,14 @@ export default function CinematicHome() {
 
         {/* MAIN SCROLL CONTAINER */}
         <div className="flex-grow overflow-y-auto z-10 custom-scrollbar relative w-full p-3 sm:p-4 lg:p-8">
-            {/* THAY ĐỔI 1: Tăng độ rộng khung chứa từ max-w-6xl lên max-w-[1400px] để thoáng hơn */}
-            <div className="max-w-[1400px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0 relative justify-center">
+            {/* THAY ĐỔI: Tăng max-w lên 1500px để 2 bảng rộng rãi hơn */}
+            <div className="max-w-[1500px] mx-auto min-h-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 pb-20 lg:pb-0 relative justify-center">
                 
                 {/* SPACER MOBILE */}
                 <div className="lg:hidden w-full h-[45vh] shrink-0 pointer-events-none"></div>
 
-                {/* LEFT COLUMN - Sticky Scroll */}
-                <div className="lg:col-span-7 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col justify-end transition-all duration-500 order-1 self-start z-20 w-full">
+                {/* LEFT COLUMN - Đổi từ col-span-7 xuống col-span-5 để nhường 2 phần cho cột phải */}
+                <div className="lg:col-span-5 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col justify-end transition-all duration-500 order-1 self-start z-20 w-full">
                      <div className="h-full flex flex-col justify-end items-center lg:items-end gap-3 w-full">
                         
                         {/* 1. HAPPENING */}
@@ -328,7 +328,6 @@ export default function CinematicHome() {
                                 <div className="flex flex-col gap-6 sm:gap-8 w-full">
                                     {status.items.map((item, idx) => (
                                         <div key={item.id} className={`flex flex-col w-full ${idx > 0 ? "pt-6 sm:pt-8 border-t border-white/10" : ""}`}>
-                                            {/* THAY ĐỔI 2: Hạ text size và dùng leading-normal để dãn khoảng cách dòng */}
                                             <h1 className={`font-serif font-bold ${status.items.length > 1 ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-3xl sm:text-4xl lg:text-5xl'} leading-normal text-white mb-4 sm:mb-5 text-shadow`}>
                                                 {item.title}
                                             </h1>
@@ -464,8 +463,8 @@ export default function CinematicHome() {
                      </div>
                 </div>
 
-                {/* --- BẢNG BÊN PHẢI --- */}
-                <div className="lg:col-span-5 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col order-2 self-start z-20 w-full">
+                {/* --- BẢNG BÊN PHẢI - Đổi từ col-span-5 lên col-span-7 để rộng hơn 40% --- */}
+                <div className="lg:col-span-7 h-auto lg:h-[calc(100dvh-6rem)] lg:sticky lg:top-4 relative flex flex-col order-2 self-start z-20 w-full">
                     <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden h-[500px] sm:h-[400px] lg:h-full shadow-2xl">
                         <div className="p-5 sm:p-6 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 flex-none">
                             <h2 className="font-serif text-2xl sm:text-xl font-bold text-white tracking-wide truncate">Thánh Lễ hôm nay</h2>
@@ -517,7 +516,6 @@ export default function CinematicHome() {
                 </div>
 
                 <div className="flex-grow min-w-0 pl-2 sm:pl-2 pr-6 sm:pr-10">
-                    {/* THAY ĐỔI 3: Giảm size chữ và tăng dãn dòng cho list bên phải bằng leading-normal */}
                     <div className={`text-lg sm:text-xl lg:text-2xl text-shadow-light font-serif leading-normal mb-1.5
                         ${isHappening ? 'text-white font-bold' : (isUpcoming ? 'text-gold-light font-bold' : 'text-white/90')}`}>
                         {ev.title}
@@ -529,7 +527,6 @@ export default function CinematicHome() {
                     <div className="text-xs sm:text-sm text-white/60 italic">{ev.priest_name}</div>
                 </div>
 
-                {/* Nhãn trạng thái dán góc trên bên phải */}
                 {isHappening && <span className="absolute top-3 right-3 sm:top-4 sm:right-5 text-[9px] sm:text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded shadow animate-pulse">LIVE</span>}
                 {isUpcoming && status.items?.some(i => i.id === ev.id) && <span className="absolute top-3 right-3 sm:top-4 sm:right-5 text-[9px] sm:text-[10px] font-bold bg-gold/20 text-gold border border-gold/30 px-2 py-0.5 rounded">SẮP TỚI</span>}
             </div>
