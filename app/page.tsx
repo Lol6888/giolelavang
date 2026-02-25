@@ -526,12 +526,12 @@ export default function CinematicHome() {
                     </div>
                     <div className="flex items-start gap-1.5 text-xs sm:text-base text-white/70 uppercase font-bold tracking-wider">
                         <MapPin size={12} className="shrink-0 mt-0.5 sm:mt-1"/>
-                        <span className="leading-snug">{ev.location}</span>
+                        <span className="leading-normal">{ev.location}</span>
                     </div>
                     {ev.priest_name && (
                         <div className="flex items-start gap-1.5 text-xs sm:text-sm text-white/60 italic mt-0.5">
                             <User size={12} className="shrink-0 mt-0.5 sm:mt-1" />
-                            <span className="leading-snug">{ev.priest_name}</span>
+                            <span className="leading-normal">{ev.priest_name}</span>
                         </div>
                     )}
                 </div>
